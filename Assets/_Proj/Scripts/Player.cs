@@ -1,31 +1,31 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 //Player Script
-[RequireComponent(typeof(BoxCollider), typeof(Rigidbody))]
+[RequireComponent(typeof(Collider), typeof(Rigidbody))]
 public class Player : MonoBehaviour
 {
   [Header("Movement Settings")]
-  public float currSpeed; // ÇöÀç ¼Óµµ
-  public float acceleration; // °¡¼Óµµ
-  public float brakeAmount; // ºê·¹ÀÌÅ© Àû¿ë Á¤µµ
-  public float backwardAccel; // ÈÄÁø °¡¼Óµµ
-  public float limitSpeed; // ÃÖ°í ¼Óµµ
-  public float drift;  // µå¸®ÇÁÆ®
-  public float turnSpeed; // È¸Àü ¼Óµµ
+  public float currSpeed; // í˜„ì¬ ì†ë„
+  public float acceleration; // ê°€ì†ë„
+  public float brakeAmount; // ë¸Œë ˆì´í¬ ì ìš© ì •ë„
+  public float backwardAccel; // í›„ì§„ ê°€ì†ë„
+  public float limitSpeed; // ìµœê³  ì†ë„
+  public float drift;  // ë“œë¦¬í”„íŠ¸
+  public float turnSpeed; // íšŒì „ ì†ë„
 
   private Rigidbody rb;
 
   //TODO:
-  //1. w´©¸£¸é °¡¼Óµµ°¡ ´õÇØÁö¸é¼­ currSpeed(¼Óµµ)¿¡ °è¼Ó ÇöÀç ¼Óµµ¸¦ Ã¤¿öÁÜ. limitSpeed¿¡(200fÁ¤µµ) µµ´ŞÇÏ¸é °¡¼Óµµ 0.(¼Óµµ°¡0ÀÌ µÇ´Â°Ô ¾Æ´Ô!!)
-  //2. adÁÂ¿ì ÀÌµ¿ÇÏ¸é¼­ ÇØ´ç ¹æÇâÀ¸·Î Â÷Ã¼ °¢µµ Á¶±İ¾¿ Æ²¾îÁü
-  //3. s´©¸£¸é ¼­¼­È÷ ¼Óµµ °¨¼Ó(Linear)
-  //4. currSpeed°¡ 0ÀÌ¶ó¸é s´­·¶À»¶§ ÈÄÁø(limitSpeed = 10f)
-  //5. SpeedUp¹ßÆÇ¿¡ ´êÀ¸¸é ¼ø°£ÀûÀ¸·Î ¼Óµµ ¿Ã¶ú´Ù°¡ nÃÊ µÚ ¹â±â Àü ¼Óµµ·Î µ¹¾Æ¿Í¾ß ÇÔ
-  //6. BarrelRoll¹ßÆÇ¿¡ ´êÀ¸¸é ¼ø°£ÀûÀ¸·Î ¼Óµµ ¿À¸£¸é¼­ nÃÊµ¿¾È 360µµ È¸ÀüÇÏ°í ¶¥¿¡ ´êÀº ÈÄ n1ÃÊ ÈÄ¿¡ ¿ø·¡ ¹ßÆÇ ´ê±â Àü ¼Óµµ·Î µ¹¾Æ¿Í¾ß ÇÔ
-  //7. ¾ÆÀÌÅÛ Æ®¸®°Å¿¡ ´êÀ¸¸é ¾ÆÀÌÅÛÀ» È¹µæÇÏ°í ÇÒ´ç. ctrlÅ° ´©¸£¸é ÇÒ´çµÈ ¾ÆÀÌÅÛ ¼ø¼­´ë·Î »ç¿ë.(Item°ü·Ã .cs°¡ ÇÊ¿äÇÔ)
-  //8. ¼Óµµ°¡ 50ÀÌ»óÀÏ °æ¿ì, s¿Í a or d¸¦ ´©¸¥´Ù¸é ¼ø°£ °¨¼ÓÇÏ¸é¼­(brakeAmount) µå¸®ÇÁÆ® ÁøÇà(È¸Àü°¢ Ä¿Á®¾ß ÇÔ)
+  //1. wëˆ„ë¥´ë©´ ê°€ì†ë„ê°€ ë”í•´ì§€ë©´ì„œ currSpeed(ì†ë„)ì— ê³„ì† í˜„ì¬ ì†ë„ë¥¼ ì±„ì›Œì¤Œ. limitSpeedì—(200fì •ë„) ë„ë‹¬í•˜ë©´ ê°€ì†ë„ 0.(ì†ë„ê°€0ì´ ë˜ëŠ”ê²Œ ì•„ë‹˜!!)
+  //2. adì¢Œìš° ì´ë™í•˜ë©´ì„œ í•´ë‹¹ ë°©í–¥ìœ¼ë¡œ ì°¨ì²´ ê°ë„ ì¡°ê¸ˆì”© í‹€ì–´ì§
+  //3. sëˆ„ë¥´ë©´ ì„œì„œíˆ ì†ë„ ê°ì†(Linear)
+  //4. currSpeedê°€ 0ì´ë¼ë©´ sëˆŒë €ì„ë•Œ í›„ì§„(limitSpeed = 10f)
+  //5. SpeedUpë°œíŒì— ë‹¿ìœ¼ë©´ ìˆœê°„ì ìœ¼ë¡œ ì†ë„ ì˜¬ëë‹¤ê°€ nì´ˆ ë’¤ ë°Ÿê¸° ì „ ì†ë„ë¡œ ëŒì•„ì™€ì•¼ í•¨
+  //6. BarrelRollë°œíŒì— ë‹¿ìœ¼ë©´ ìˆœê°„ì ìœ¼ë¡œ ì†ë„ ì˜¤ë¥´ë©´ì„œ nì´ˆë™ì•ˆ 360ë„ íšŒì „í•˜ê³  ë•…ì— ë‹¿ì€ í›„ n1ì´ˆ í›„ì— ì›ë˜ ë°œíŒ ë‹¿ê¸° ì „ ì†ë„ë¡œ ëŒì•„ì™€ì•¼ í•¨
+  //7. ì•„ì´í…œ íŠ¸ë¦¬ê±°ì— ë‹¿ìœ¼ë©´ ì•„ì´í…œì„ íšë“í•˜ê³  í• ë‹¹. ctrlí‚¤ ëˆ„ë¥´ë©´ í• ë‹¹ëœ ì•„ì´í…œ ìˆœì„œëŒ€ë¡œ ì‚¬ìš©.(Itemê´€ë ¨ .csê°€ í•„ìš”í•¨)
+  //8. ì†ë„ê°€ 50ì´ìƒì¼ ê²½ìš°, sì™€ a or dë¥¼ ëˆ„ë¥¸ë‹¤ë©´ ìˆœê°„ ê°ì†í•˜ë©´ì„œ(brakeAmount) ë“œë¦¬í”„íŠ¸ ì§„í–‰(íšŒì „ê° ì»¤ì ¸ì•¼ í•¨)
 
   void Awake()
   {
@@ -36,7 +36,7 @@ public class Player : MonoBehaviour
     CarMove();
   }
 
-  // ¹°¸® ¿¬»ê °ü·Ã Ã³¸®´Â FixedUpdate°¡ ¾ÈÁ¤Àû
+  // ë¬¼ë¦¬ ì—°ì‚° ê´€ë ¨ ì²˜ë¦¬ëŠ” FixedUpdateê°€ ì•ˆì •ì 
   void FixedUpdate()
   {
     ApplyTurn();
@@ -46,38 +46,42 @@ public class Player : MonoBehaviour
 
   void CarMove()
   {
-    float x = Input.GetAxis("Horizontal"); // ÁÂ¿ì
-    float z = Input.GetAxis("Vertical"); // ¾ÕµÚ(z==1 : ¾Õ, z==-1 : µÚ, z==0 ¾Æ¹«°Íµµ ´©¸£Áö ¾ÊÀ½)
+    float x = Input.GetAxis("Horizontal"); // ì¢Œìš°
+    float z = Input.GetAxis("Vertical"); // ì•ë’¤(z==1 : ì•, z==-1 : ë’¤, z==0 ì•„ë¬´ê²ƒë„ ëˆ„ë¥´ì§€ ì•ŠìŒ)
 
     if (z > 0f)
     {
-      currSpeed += acceleration * Time.deltaTime; // ÇöÀç ¼Óµµ + °¡¼Óµµ(w´©¸£¸é ¼Óµµ ¿À¸§)
-      currSpeed = Mathf.Min(currSpeed, limitSpeed); // ÇöÀç ¼Óµµ¿Í ÃÖ°í¼Óµµ¸¦ ºñ±³ÇØ¼­ °¡Àå ÀÛÀº °ªÀ¸·Î ÇÒ´ç.(¼Óµµ Á¦ÇÑ)
+      currSpeed += acceleration * Time.deltaTime; // í˜„ì¬ ì†ë„ + ê°€ì†ë„(wëˆ„ë¥´ë©´ ì†ë„ ì˜¤ë¦„)
+      currSpeed = Mathf.Min(currSpeed, limitSpeed); // í˜„ì¬ ì†ë„ì™€ ìµœê³ ì†ë„ë¥¼ ë¹„êµí•´ì„œ ê°€ì¥ ì‘ì€ ê°’ìœ¼ë¡œ í• ë‹¹.(ì†ë„ ì œí•œ)
     }
-    else if(z < 0f)
+    else if (z < 0f)
     {
-      if(currSpeed > 0f)
+      if (currSpeed > 0f)
       {
         currSpeed -= brakeAmount * Time.deltaTime;
-        currSpeed = Mathf.Max(currSpeed, 0f); // À½¼ö ¼Óµµ µÇ´Â °Í ¹æÁö
+        currSpeed = Mathf.Max(currSpeed, 0f); // ìŒìˆ˜ ì†ë„ ë˜ëŠ” ê²ƒ ë°©ì§€
       }
       else
       {
         currSpeed -= backwardAccel * Time.deltaTime;
-        currSpeed = Mathf.Max(currSpeed, -10f); // ÈÄÁø ÃÖ°í ¼Óµµ Á¦ÇÑ
+        currSpeed = Mathf.Max(currSpeed, -10f); // í›„ì§„ ìµœê³  ì†ë„ ì œí•œ
       }
     }
-    // ¾î¶² Å°µµ ´©¸£°í ÀÖÁö ¾ÊÀ»¶§ ¼­¼­È÷ °¨¼Ó(ÇöÀç ¼Óµµ¸¦ 0f¿¡ °¡±î¿öÁöµµ·Ï 1ÃÊµ¿¾È brakeAmount¸¸Å­ ÇÁ·¹ÀÓ º¸Á¤(ÇÁ·¹ÀÓ ¼Óµµ¿Í ¹«°üÇÏ°Ô ÀÏÁ¤Èù °¨¼Ó À¯Áö))
+
+    if (x > 0f)
+    {
+
+    }
+    else if (x < 0f)
+    {
+
+    }
+
+    // ì–´ë–¤ í‚¤ë„ ëˆ„ë¥´ê³  ìˆì§€ ì•Šì„ë•Œ ì„œì„œíˆ ê°ì†(í˜„ì¬ ì†ë„ë¥¼ 0fì— ê°€ê¹Œì›Œì§€ë„ë¡ 1ì´ˆë™ì•ˆ brakeAmountë§Œí¼ í”„ë ˆì„ ë³´ì •(í”„ë ˆì„ ì†ë„ì™€ ë¬´ê´€í•˜ê²Œ ì¼ì •íŒ ê°ì† ìœ ì§€))
     else currSpeed = Mathf.MoveTowards(currSpeed, 0f, brakeAmount * Time.deltaTime);
-    
+
     Vector3 move = transform.forward * currSpeed * Time.deltaTime;
     rb.MovePosition(rb.position + move);
-  }
-
-
-  void ApplyBrake()
-  {
-
   }
 
   void ApplyTurn()
