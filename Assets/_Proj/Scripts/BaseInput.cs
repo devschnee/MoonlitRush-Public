@@ -1,6 +1,6 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
-// ´Ù¸¥ ÄÁÆ®·Ñ·¯ »ç¿ëÀÇ È®Àå¼ºÀ» °í·ÁÇÏ¿© »ó¼Ó Çü½ÄÀ¸·Î ºĞ¸®
+// ë‹¤ë¥¸ ì»¨íŠ¸ë¡¤ëŸ¬ ì‚¬ìš©ì˜ í™•ì¥ì„±ì„ ê³ ë ¤í•˜ì—¬ ìƒì† í˜•ì‹ìœ¼ë¡œ ë¶„ë¦¬
 public struct InputData
 {
   public bool Accelerate;
