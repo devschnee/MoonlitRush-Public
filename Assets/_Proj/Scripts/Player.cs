@@ -21,6 +21,7 @@ public class Player : MonoBehaviour
   [Header("Wheel Colliders")]
   public WheelCollider frontLWheelCollider;
   public WheelCollider frontRWheelCollider;
+  [Tooltip("후륜 구동 => 뒷 바퀴 Collider Mass 높아야 함")]
   public WheelCollider rearLWheelCollider;
   public WheelCollider rearRWheelCollider;
 
@@ -49,7 +50,7 @@ public class Player : MonoBehaviour
   void Awake()
   {
     rb = GetComponent<Rigidbody>();
-    rb.centerOfMass = new Vector3(0, -0.5f, -0.3f);
+    //rb.centerOfMass = new Vector3(0, -0.5f, -0.3f);
   }
   void Update()
   {
