@@ -1,12 +1,20 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class TimeManager : MonoBehaviour
 {
   // Singleton Instance : Accessible from anywhere
   public static TimeManager Instance;
+  public class PlayerTimeData
+  {
+    public string playerName;
+    public float finishTime;
+  }
 
+  public List<PlayerTimeData> data = new List<PlayerTimeData>();
+  
   private float raceStartTime; // (Time.time)
   private float raceEndTime;
   private bool isTiming;
@@ -17,6 +25,7 @@ public class TimeManager : MonoBehaviour
   // Time.time keeps passing, but the paused time needs to be subtracted from the record. if paused.
   public float RaceDuration => isTiming ? Time.time - raceStartTime - totalPausedDuration : raceEndTime - raceStartTime - totalPausedDuration;
 
+  
   void Awake()
   {
     // Prevent duplication in other scenes
@@ -87,5 +96,19 @@ public class TimeManager : MonoBehaviour
     raceStartTime = 0f;
     raceEndTime = 0f;
     isTiming = false;
+  }
+
+  public void RecordFinishTime(string pName, float fTime)
+  {
+    data.Add(new PlayerTimeData
+    {
+      playerName = pName,
+      finishTime = fTime,
+    });
+  }
+
+  public List<PlayerTimeData> GetRanking()
+  {
+    return data.OrderBy(p => p.finishTime).ToList(); // Sort racing records by fastest time
   }
 }
