@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using TMPro; // Text Mesh Pro(Not Legacy Text)
 
 public class RankingUI : MonoBehaviour
 {
@@ -19,16 +18,9 @@ public class RankingUI : MonoBehaviour
     // Iterate through the ranking list and create UI items one by one
     for (int i = 0; i < ranking.Count; i++)
     {
-      var entry = Instantiate(rankingEntryPrefab, rankingListParent);
-      var text = entry.GetComponent<TextMeshProUGUI>();
-      text.text = $"{i + 1}. {ranking[i].playerName} - {FormatTime(ranking[i].finishTime)}";
+      var rankPrefab = Instantiate(rankingEntryPrefab, rankingListParent);
+      var rankUI = rankPrefab.GetComponent<RankingPrefab>();
+      rankUI.SetUI(i + 1, ranking[i].playerName, ranking[i].finishTime);
     }
-  }
-
-  string FormatTime(float time)
-  {
-    int minutes = Mathf.FloorToInt(time / 60f);
-    float seconds = time % 60f;
-    return $"{minutes:00}:{seconds:00.00}";
   }
 }
