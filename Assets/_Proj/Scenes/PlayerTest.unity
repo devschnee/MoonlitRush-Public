@@ -727,6 +727,73 @@ WheelCollider:
     type: 3}
   m_PrefabInstance: {fileID: 1780803346}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1034001931
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 7217561005741439, guid: 47031c538f99e674d8352fc5c72d151a, type: 3}
+      propertyPath: m_Name
+      value: Veh_Retro 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.120355606
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.00000011920929
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -153.9971
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 2984056335586423460, guid: 47031c538f99e674d8352fc5c72d151a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 47031c538f99e674d8352fc5c72d151a, type: 3}
 --- !u!1 &1221804127 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6954521560053267473, guid: c0fba933bea9ee24c93d232d7f04de8b,
@@ -1325,6 +1392,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4008478661783239099, guid: c0fba933bea9ee24c93d232d7f04de8b,
+        type: 3}
+      propertyPath: stats.steer
+      value: 3.94
+      objectReference: {fileID: 0}
     - target: {fileID: 6298946265826739312, guid: c0fba933bea9ee24c93d232d7f04de8b,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -1379,6 +1451,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Veh_Retro
+      objectReference: {fileID: 0}
+    - target: {fileID: 6419277843105738493, guid: c0fba933bea9ee24c93d232d7f04de8b,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1492,3 +1569,4 @@ SceneRoots:
   - {fileID: 1222995528744390892}
   - {fileID: 1780803346}
   - {fileID: 154480600}
+  - {fileID: 1034001931}

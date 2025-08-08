@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using UnityEditor.SceneTemplate;
 
 public class Player : MonoBehaviour
 {
@@ -19,12 +20,12 @@ public class Player : MonoBehaviour
   public List<GameObject> visualWheelsMesh;
 
   [Header("WheelColliders")]
-  public WheelCollider frontLeftWheel;
-  public WheelCollider frontRightWheel;
-  public WheelCollider rearLeftWheel;
-  public WheelCollider rearRightWheel;
+  public WheelCollider flWheel;
+  public WheelCollider frWheel;
+  public WheelCollider rlWheel;
+  public WheelCollider rrWheel;
 
-  [Header("Steering")]
+  [Header("VisualSteering")]
   [Range(1.0f, 20.0f), Tooltip("스티어링이 얼마나 빠르게 반응하는지 조절")]
   public float steerSpeed = 10.0f;
 
@@ -72,7 +73,7 @@ public class Player : MonoBehaviour
     finalStats = new Stats(stats);
     originalStats = new Stats(stats);
     currGrip = stats.grip;
-    defaultSidewaysFriction = frontLeftWheel.sidewaysFriction;
+    defaultSidewaysFriction = flWheel.sidewaysFriction;
   }
 
   void FixedUpdate()
@@ -101,8 +102,8 @@ public class Player : MonoBehaviour
     // 공중 상태 처리
     GroundAirbourne();
 
-    // 드리프트 처리
-    HandleDrift();
+    if(wantsToDrift)
+      HandleDrift();
 
     // 시각적 휠 업데이트
     UpdateVisualWheels();
@@ -110,58 +111,58 @@ public class Player : MonoBehaviour
 
   void ApplyMotorAndBrake()
   {
-    if (rb == null)
-    {
-      Debug.LogError("ApplyMotorAndBrake: Rigidbody가 null입니다.");
-    }
-    if (rearLeftWheel == null)
-    {
-      Debug.LogError("ApplyMotorAndBrake: rearLeftWheel이 null입니다.");
-    }
-    if (finalStats == null)
-    {
-      Debug.LogError("ApplyMotorAndBrake: finalStats가 null입니다.");
-    }
+    if (rb == null || rlWheel == null || finalStats == null) return; 
+    
     float accelInput = (input.Accelerate ? 1.0f : 0.0f) - (input.Brake || input.Reverse ? 1.0f : 0.0f);
     bool isBraking = (Vector3.Dot(rb.velocity, transform.forward) > 0 && accelInput < 0) || (Vector3.Dot(rb.velocity, transform.forward) < 0 && accelInput > 0);
 
     if (isBraking)
     {
-      rearLeftWheel.brakeTorque = finalStats.braking * 1000;
-      rearRightWheel.brakeTorque = finalStats.braking * 1000;
-      rearLeftWheel.motorTorque = 0;
-      rearRightWheel.motorTorque = 0;
+      rlWheel.brakeTorque = finalStats.braking * 1000;
+      rrWheel.brakeTorque = finalStats.braking * 1000;
+      rlWheel.motorTorque = 0;
+      rrWheel.motorTorque = 0;
     }
     else if (Mathf.Abs(accelInput) > 0.01f)
     {
       float motorForce = finalStats.acceleration * rb.mass;
       float motorTorque = motorForce / 2;
-      rearLeftWheel.motorTorque = motorTorque * accelInput;
-      rearRightWheel.motorTorque = motorTorque * accelInput;
-      rearLeftWheel.brakeTorque = 0;
-      rearRightWheel.brakeTorque = 0;
+      rlWheel.motorTorque = motorTorque * accelInput;
+      rrWheel.motorTorque = motorTorque * accelInput;
+      rlWheel.brakeTorque = 0;
+      rrWheel.brakeTorque = 0;
     }
     else
     {
       // 입력이 없으면 감속 위해 브레이크 토크 적용
-      rearLeftWheel.motorTorque = 0;
-      rearRightWheel.motorTorque = 0;
-      rearLeftWheel.brakeTorque = finalStats.dragTime * 100;
-      rearRightWheel.brakeTorque = finalStats.dragTime * 100;
+      rlWheel.motorTorque = 0;
+      rrWheel.motorTorque = 0;
+      rlWheel.brakeTorque = finalStats.dragTime * 100;
+      rrWheel.brakeTorque = finalStats.dragTime * 100;
     }
   }
 
   void ApplySteering()
   {
-    float currentSteerAngle = frontLeftWheel.steerAngle;
-    float steerMultiplier = isDrifting ? (1.0f + addDriftSteer / finalStats.steer) : 1.0f;
-    float targetSteerAngle = input.TurnInput * finalStats.steer * steerMultiplier;
+    float currentSteerAngle = flWheel.steerAngle;
+
+    float speedFactor = Mathf.Clamp01(stats.currSpeed / finalStats.limitSpeed);
+    float steerDamp = Mathf.Lerp(1f, 0.2f, speedFactor); // 고속일수록 덜 회전
+
+    float targetSteerAngle = input.TurnInput * finalStats.steer * steerDamp;
     float newSteerAngle = Mathf.Lerp(currentSteerAngle, targetSteerAngle, Time.fixedDeltaTime * steerSpeed);
 
-    frontLeftWheel.steerAngle = newSteerAngle;
-    frontRightWheel.steerAngle = newSteerAngle;
-  }
+    flWheel.steerAngle = newSteerAngle;
+    frWheel.steerAngle = newSteerAngle;
 
+    // 실제 차 돌리기 위한 회전력 추가
+    Vector3 angular = rb.angularVelocity;
+    float targetAngularY = input.TurnInput * finalStats.steer * 0.5f;
+    Debug.Log($"Angular target: {targetAngularY}, Steer: {finalStats.steer}");
+    angular.y = Mathf.Lerp(angular.y, targetAngularY, Time.fixedDeltaTime * 0.1f); // 반응 속도
+    rb.angularVelocity = angular;
+
+  }
   void HandleDrift()
   {
     wantsToDrift = input.Brake && Vector3.Dot(rb.velocity, transform.forward) > 0f;
@@ -174,13 +175,13 @@ public class Player : MonoBehaviour
         isDrifting = true;
 
         // WheelFrictionCurve 설정
-        WheelFrictionCurve driftFriction = frontLeftWheel.sidewaysFriction;
+        WheelFrictionCurve driftFriction = flWheel.sidewaysFriction;
         driftFriction.stiffness = driftGrip;
 
-        frontLeftWheel.sidewaysFriction = driftFriction;
-        frontRightWheel.sidewaysFriction = driftFriction;
-        rearLeftWheel.sidewaysFriction = driftFriction;
-        rearRightWheel.sidewaysFriction = driftFriction;
+        flWheel.sidewaysFriction = driftFriction;
+        frWheel.sidewaysFriction = driftFriction;
+        rlWheel.sidewaysFriction = driftFriction;
+        rrWheel.sidewaysFriction = driftFriction;
       }
       // 드리프트 종료
       else if (isDrifting && !wantsToDrift)
@@ -188,10 +189,10 @@ public class Player : MonoBehaviour
         isDrifting = false;
 
         // WheelFrictionCurve 원상 복구
-        frontLeftWheel.sidewaysFriction = defaultSidewaysFriction;
-        frontRightWheel.sidewaysFriction = defaultSidewaysFriction;
-        rearLeftWheel.sidewaysFriction = defaultSidewaysFriction;
-        rearRightWheel.sidewaysFriction = defaultSidewaysFriction;
+        flWheel.sidewaysFriction = defaultSidewaysFriction;
+        frWheel.sidewaysFriction = defaultSidewaysFriction;
+        rlWheel.sidewaysFriction = defaultSidewaysFriction;
+        rrWheel.sidewaysFriction = defaultSidewaysFriction;
       }
     }
     else
@@ -199,42 +200,52 @@ public class Player : MonoBehaviour
       isDrifting = false;
 
       // 공중에 있을 때 마찰력 원상 복구
-      frontLeftWheel.sidewaysFriction = defaultSidewaysFriction;
-      frontRightWheel.sidewaysFriction = defaultSidewaysFriction;
-      rearLeftWheel.sidewaysFriction = defaultSidewaysFriction;
-      rearRightWheel.sidewaysFriction = defaultSidewaysFriction;
+      flWheel.sidewaysFriction = defaultSidewaysFriction;
+      frWheel.sidewaysFriction = defaultSidewaysFriction;
+      rlWheel.sidewaysFriction = defaultSidewaysFriction;
+      rrWheel.sidewaysFriction = defaultSidewaysFriction;
     }
   }
 
   void ApplySpeedUp()
   {
-    float elapsedTime = boosterDuration - currBoosterTime;
-    float t = Mathf.Clamp01(elapsedTime / boosterDuration);
+    //float elapsedTime = boosterDuration - currBoosterTime;
+    //float t = Mathf.Clamp01(elapsedTime / boosterDuration);
     if(currBoosterTime > 0)
     {
       currBoosterTime -= Time.fixedDeltaTime;
-      
+
+      float t = 1.0f - (currBoosterTime / boosterDuration);
       finalStats.acceleration = originalStats.acceleration + boosterAccelAdd;
 
       float boostForce = Mathf.Lerp(0, boosterSpeedAdd, t);
-      rb.AddForce(transform.forward * boostForce, ForceMode.Acceleration);
+      rb.AddRelativeForce(transform.forward * boostForce, ForceMode.Impulse);
+
+      WheelFrictionCurve tmpFriction = flWheel.sidewaysFriction;
+      tmpFriction.stiffness = Mathf.Lerp(defaultSidewaysFriction.stiffness, defaultSidewaysFriction.stiffness * 2.5f, t);
+      flWheel.sidewaysFriction = tmpFriction;
+      frWheel.sidewaysFriction = tmpFriction;
+      rlWheel.sidewaysFriction = tmpFriction;
+      rrWheel.sidewaysFriction = tmpFriction;
+
     }
     else
     {
-      float revertTime = 1f;
-      float lerpRatio = Mathf.Clamp01((revertTime - elapsedTime) / revertTime);
-      finalStats.acceleration = originalStats.acceleration;
       finalStats.acceleration = Mathf.Lerp(finalStats.acceleration, originalStats.acceleration, Time.fixedDeltaTime * 2.0f);
+      flWheel.sidewaysFriction = defaultSidewaysFriction;
+      frWheel.sidewaysFriction = defaultSidewaysFriction;
+      rlWheel.sidewaysFriction = defaultSidewaysFriction;
+      rrWheel.sidewaysFriction = defaultSidewaysFriction;
     }
   }
 
   void UpdateGroundedState()
   {
     int groundedCount = 0;
-    if (frontLeftWheel.isGrounded) groundedCount++;
-    if (frontRightWheel.isGrounded) groundedCount++;
-    if (rearLeftWheel.isGrounded) groundedCount++;
-    if (rearRightWheel.isGrounded) groundedCount++;
+    if (flWheel.isGrounded) groundedCount++;
+    if (frWheel.isGrounded) groundedCount++;
+    if (rlWheel.isGrounded) groundedCount++;
+    if (rrWheel.isGrounded) groundedCount++;
 
     groundPercent = (float)groundedCount / 4.0f;
     airPercent = 1 - groundPercent;
@@ -245,6 +256,11 @@ public class Player : MonoBehaviour
     if (airPercent >= 1)
     {
       rb.velocity += Physics.gravity * Time.fixedDeltaTime * finalStats.addedGravity;
+    }
+    if(airPercent > 0.5f)
+    {
+      Quaternion targetRot = Quaternion.Euler(0, transform.rotation.eulerAngles.y, 0);
+      rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, Time.fixedDeltaTime * airborneReorientation));
     }
   }
 
@@ -269,16 +285,16 @@ public class Player : MonoBehaviour
       currBoosterTime = boosterDuration;
 
       //Vector3 boosterForce = transform.forward * boosterSpeedAdd * rb.mass;
-      //rb.AddForce(boosterForce, ForceMode.Impulse);
+      rb.AddForce(transform.forward * boosterSpeedAdd, ForceMode.Impulse);
     }
   }
 
   void UpdateVisualWheels()
   {
-    UpdateWheelPose(frontRightWheel, visualWheelsMesh[0].transform);
-    UpdateWheelPose(frontLeftWheel, visualWheelsMesh[1].transform);
-    UpdateWheelPose(rearRightWheel, visualWheelsMesh[2].transform);
-    UpdateWheelPose(rearLeftWheel, visualWheelsMesh[3].transform);
+    UpdateWheelPose(frWheel, visualWheelsMesh[0].transform);
+    UpdateWheelPose(flWheel, visualWheelsMesh[1].transform);
+    UpdateWheelPose(rrWheel, visualWheelsMesh[2].transform);
+    UpdateWheelPose(rlWheel, visualWheelsMesh[3].transform);
   }
 
   void UpdateWheelPose(WheelCollider collider, Transform wheelTransform)
@@ -288,6 +304,26 @@ public class Player : MonoBehaviour
     collider.GetWorldPose(out pos, out rot);
     wheelTransform.position = pos;
     wheelTransform.rotation = rot;
+    //if (!collider.motorTorque.Equals(0)) return;
+    //float visualSpinSpeed = rb.velocity.magnitude * 2f;
+    //wheelTransform.Rotate(Vector3.right, visualSpinSpeed * Time.deltaTime, Space.Self);
+    //if (collider.motorTorque == 0)
+    //{
+    //  float visualSpinSpeed = rb.velocity.magnitude * 2f;
+    //  wheelTransform.Rotate(Vector3.right, visualSpinSpeed * Time.deltaTime, Space.Self);
+    //}
+
+    if (collider == flWheel || collider == frWheel)
+    {
+      float visualSteerAngle = input.TurnInput * 20f;
+      Quaternion steeringRot = Quaternion.Euler(0, visualSteerAngle, 0);
+
+      wheelTransform.rotation = rot * steeringRot;
+    }
+    else
+    {
+      wheelTransform.rotation = rot;
+    }
   }
 
   
