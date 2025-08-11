@@ -1,236 +1,351 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
+  public float currSpeed;
   #region References
   [Header("References")]
-  [SerializeField] private Rigidbody carRB;
+  [SerializeField] private Rigidbody rb;
   [SerializeField] private Transform[] rayPoints;
   [SerializeField] private LayerMask drivable;
-  [SerializeField] private Transform accelerationPoint;
+  [SerializeField] private Transform accelPoint;
+  [SerializeField] private GameObject[] tires = new GameObject[4];
+  [SerializeField] private GameObject[] frontTireParents = new GameObject[2];
+  [SerializeField] private TrailRenderer[] skidMarks = new TrailRenderer[2];
+  [SerializeField] private ParticleSystem[] skidFxs = new ParticleSystem[2];
+  [SerializeField] private AudioSource engineSound, skidSound;
   #endregion
 
   #region Suspension
   [Header("Suspension Settings")]
   [SerializeField] private float springStiffness = 30000f;
   [SerializeField] private float damperStiffness = 3000f;
-  [SerializeField] private float restLength = 1f;
+  [SerializeField] private float restLen = 1f;
   [SerializeField] private float springTravel = 0.5f;
   [SerializeField] private float wheelRadius = 0.33f;
   #endregion
+  int[] wheelIsGrounded = new int[4];
+  bool isGrounded = false;
 
-  #region Drive & Steering
-  [Header("Drive / Steering")]
+  float originAccel;
+  float originMaxSpeed;
+
+  [SerializeField] private float speedUpAccelMultiplier = 1.5f;
+  [SerializeField] private float speedUpMaxSpeedMultiplier = 1.2f;
+  [SerializeField] private float speedUpDuration = 3f;
+
+
+  [Header("Car Settings")]
   [SerializeField] private float acceleration = 25f;
   [SerializeField] private float maxSpeed = 100f;
-  [SerializeField] private float coastDrag = 2.0f;           // 입력 없음: 전/후 감쇠
-  [SerializeField] private float lateralFriction = 6.0f;     // 좌/우(횡) 감쇠
-  [SerializeField] private float longitudinalFriction = 0.8f;// 전/후(구름) 감쇠
+  [SerializeField] private float deceleration = 10f;
+  [SerializeField] private float steerForce = 15f;
+  [SerializeField] private AnimationCurve turningCurve;
+  [SerializeField] private float dragCoefficient;
 
-  [SerializeField] private float steerTorque = 120f;         // 조향 토크(작게 시작)
-  [SerializeField] private float minSteerSpeed = 1.0f;       // 너무 느리면 조향X
-  #endregion
-  [SerializeField] float maxSteerAngle = 25f;      // 최대 조향각(도)
-  [SerializeField] float steerSpeedFalloff = 0.06f;// 속도 높을수록 조향 감소
-  [SerializeField] float cornerStiffnessFront = 9f;// 앞바퀴 횡력 계수(점성형)
-  [SerializeField] float cornerStiffnessRear = 7f;// 뒷바퀴 횡력 계수
-  [SerializeField] float muLat = 1.2f;             // 횡 마찰 상한(마찰원)
-  [SerializeField] float muLong = 1.0f;            // 종 마찰 상한
-  [SerializeField] float yawDamping = 1.0f;        // 아주 약한 요 감쇠
+  [Header("Drift")]
+  [SerializeField] private float driftDragMultiplier = 2f;
+  [SerializeField] private float driftTransitionSpeed = 5f;
 
-  #region Debug
-  [Header("Debug Draw")]
-  [SerializeField] private bool debugDraw = true;
-  [SerializeField] private float debugForceScale = 0.01f;
-  const int LINES_PER_WHEEL = 4; // ray, Fn, Flat, Flong
-  Vector3[] dbgStart, dbgEnd;
-  Color[] dbgColor;
-  #endregion
+  private Vector3 currCarLocalVel = Vector3.zero;
+  private float carVelRatio = 0;
+  private float currDragCoefficient;
 
-  // State / Input
-  int[] wheelsIsGrounded;
-  bool isGrounded;
-  float moveInput, steerInput;
+  bool readyToReverse = false;
+  float moveInput = 0;
+  float steerInput = 0;
+  bool isDrifting = false;
+  
+  [Header("Visuals")]
+  [SerializeField] private float tireRotSpeed = 3000f;
+  [SerializeField] private float maxSteeringAngle = 30f;
+  [SerializeField] private float minSideSkidVel = 10f;
+
+  [Header("Audio")]
+  [SerializeField]
+  [Range(0, 1)] private float minPitch = 1f;
+  [SerializeField]
+  [Range(1, 5)] private float maxPitch = 5f;
 
   void Awake()
   {
-    if (!carRB) carRB = GetComponent<Rigidbody>();
+    rb = GetComponent<Rigidbody>();
 
-    int n = rayPoints != null ? rayPoints.Length : 0;
-    wheelsIsGrounded = new int[n];
-
-    int totalLines = n * LINES_PER_WHEEL;
-    dbgStart = new Vector3[totalLines];
-    dbgEnd = new Vector3[totalLines];
-    dbgColor = new Color[totalLines];
+    originAccel = acceleration;
+    originMaxSpeed = maxSpeed;
   }
 
   void Update()
   {
-    // 입력은 Update에서
-    steerInput = Input.GetAxis("Horizontal");
-    moveInput = Input.GetAxis("Vertical");
-
-    // 디버그 라인은 렌더 타이밍에
-    if (!debugDraw) return;
-    for (int i = 0; i < dbgStart.Length; i++)
-      Debug.DrawLine(dbgStart[i], dbgEnd[i], dbgColor[i]);
+    GetPlayerInput();
+    currSpeed = rb.velocity.magnitude;
   }
 
   void FixedUpdate()
   {
     Suspension();
-    isGrounded = GroundedWheelCount() > 1;
-    MovePhysics();
+    GroundCheck();
+    CalculateCarVelocity();
+    Movement();
+    Visuals();
+    //EngineSound();
   }
 
-  #region Physics Motion
-  void MovePhysics()
+  #region Movement
+  void Movement()
   {
-    if (!isGrounded) return;
-
-    var up = carRB.transform.up;
-    var fwd = carRB.transform.forward;
-    var right = carRB.transform.right;
-
-    Vector3 v = carRB.velocity;
-    float fwdSpeed = Vector3.Dot(v, fwd);
-    float speedAbs = Mathf.Abs(fwdSpeed);
-
-    if (speedAbs > minSteerSpeed)
+    if (isGrounded)
     {
-      float steerScale = 1f / (1f + speedAbs * steerSpeedFalloff);
-      float reverseSign = (fwdSpeed < -minSteerSpeed) ? -1f : 1f;
-      float groundedFact = Mathf.Clamp01(GroundedWheelCount() / (float)rayPoints.Length);
-
-      carRB.AddTorque(up * steerInput * steerTorque * steerScale * reverseSign * groundedFact,
-                      ForceMode.Acceleration);
-    }
-
-    if (Mathf.Abs(moveInput) > 0.01f)
-      carRB.AddForce(fwd * (acceleration * moveInput), ForceMode.Acceleration);
-    else
-    {
-      // 입력 없을 때 평면 성분만 부드럽게 감속
-      Vector3 vPlanar = Vector3.ProjectOnPlane(carRB.velocity, up);
-      carRB.AddForce(-vPlanar * coastDrag, ForceMode.Acceleration);
-    }
-    float wy = Vector3.Dot(carRB.angularVelocity, up);
-    carRB.AddTorque(-wy * yawDamping * up, ForceMode.Acceleration);
-
-    if (fwdSpeed > maxSpeed)
-    {
-      Vector3 vSideKeep = v - Vector3.Project(v, fwd);
-      carRB.velocity = fwd * maxSpeed + vSideKeep;
-    }
-  }
-  #endregion
-
-  #region Suspension
-  void Suspension()
-  {
-    if (rayPoints == null || rayPoints.Length == 0) return;
-
-    float maxLen = restLength + springTravel;
-    Vector3 up = carRB.transform.up;
-
-    // 속도에 따라 유효 조향각
-    float speed = Vector3.ProjectOnPlane(carRB.velocity, up).magnitude;
-    float steerAngle = (maxSteerAngle / (1f + speed * steerSpeedFalloff)) * steerInput;
-
-    for (int i = 0; i < rayPoints.Length; i++)
-    {
-      int baseIdx = i * LINES_PER_WHEEL;
-      var origin = rayPoints[i].position;
-
-      if (Physics.Raycast(origin, -up, out var hit, maxLen + wheelRadius, drivable, QueryTriggerInteraction.Ignore))
+      if (Mathf.Abs(moveInput) > 0.01f)
       {
-        wheelsIsGrounded[i] = 1;
-
-        float currLen = Mathf.Max(0f, hit.distance - wheelRadius);
-        float x = Mathf.Clamp(restLength - currLen, -springTravel, springTravel);
-
-        // 법선/표면 축
-        Vector3 n = hit.normal;
-        Vector3 fwdSurf = Vector3.ProjectOnPlane(carRB.transform.forward, n).normalized;
-
-        // 앞바퀴만 조향각 적용
-        bool isFront = (i < 2);
-        Vector3 wheelFwd = isFront ? (Quaternion.AngleAxis(steerAngle, n) * fwdSurf) : fwdSurf;
-        Vector3 wheelRight = Vector3.Cross(n, wheelFwd).normalized;
-
-        // 휠 접점 속도 분해
-        Vector3 vP = carRB.GetPointVelocity(origin);
-        float vN = Vector3.Dot(vP, n);           // 법선
-        float vLongW = Vector3.Dot(vP, wheelFwd);    // 바퀴 종
-        float vLatW = Vector3.Dot(vP, wheelRight);  // 바퀴 횡
-
-        // 스프링/댐퍼 (법선 힘 음수 금지)
-        float Fspring = springStiffness * x;
-        float Fdamper = damperStiffness * vN;
-        float Fn = Mathf.Max(0f, Fspring - Fdamper);
-
-        // 횡력(코너링): 속도비례 간이 모델 + 마찰원 제한
-        float C = isFront ? cornerStiffnessFront : cornerStiffnessRear;
-        float Fy = -vLatW * C;
-        float FyMax = muLat * Fn;
-        Fy = Mathf.Clamp(Fy, -FyMax, FyMax);
-
-        // 종 마찰(구름 저항): 너무 크면 가속 죽음 → 소량 + 제한
-        float Fx = -vLongW * longitudinalFriction;
-        float FxMax = muLong * Fn;
-        Fx = Mathf.Clamp(Fx, -FxMax, FxMax);
-
-        Vector3 F = n * Fn + wheelRight * Fy + wheelFwd * Fx;
-        carRB.AddForceAtPosition(F, origin, ForceMode.Force);
-
-        if (debugDraw)
+        Acceleration();
+        readyToReverse = false;
+      }
+      else if(moveInput < -0.01f)
+      {
+        if(currCarLocalVel.z > -0.1f && readyToReverse)
         {
-          dbgStart[baseIdx + 0] = origin;
-          dbgEnd[baseIdx + 0] = hit.point;
-          dbgColor[baseIdx + 0] = Color.red;
-
-          dbgStart[baseIdx + 1] = origin;
-          dbgEnd[baseIdx + 1] = origin + (n * Fn) * debugForceScale;
-          dbgColor[baseIdx + 1] = Color.cyan;
-
-          dbgStart[baseIdx + 2] = origin;
-          dbgEnd[baseIdx + 2] = origin + (wheelRight * Fy) * debugForceScale;
-          dbgColor[baseIdx + 2] = Color.yellow;
-
-          dbgStart[baseIdx + 3] = origin;
-          dbgEnd[baseIdx + 3] = origin + (wheelFwd * Fx) * debugForceScale;
-          dbgColor[baseIdx + 3] = Color.magenta;
+          Acceleration();
+        }
+        else
+        {
+          Deceleration();
         }
       }
       else
       {
-        wheelsIsGrounded[i] = 0;
-        if (debugDraw)
-        {
-          dbgStart[baseIdx + 0] = origin;
-          dbgEnd[baseIdx + 0] = origin + (-up) * (wheelRadius + maxLen);
-          dbgColor[baseIdx + 0] = Color.green;
-          for (int k = 1; k < LINES_PER_WHEEL; k++)
-          {
-            dbgStart[baseIdx + k] = origin;
-            dbgEnd[baseIdx + k] = origin;
-            dbgColor[baseIdx + k] = Color.clear;
-          }
-        }
+        Deceleration();
+      }
+
+        Turn();
+      SidewaysDrag();
+    }
+  }
+
+  void Acceleration()
+  {
+    rb.AddForceAtPosition(acceleration * moveInput * transform.forward, accelPoint.position, ForceMode.Acceleration);
+  }
+
+  void Deceleration()
+  {
+    rb.AddForceAtPosition(deceleration * moveInput * -transform.forward, accelPoint.position, ForceMode.Acceleration);
+  }
+
+  void Turn()
+  {
+    float currSteerStrength = isDrifting ? steerForce * 1.5f : steerForce;
+    rb.AddTorque(currSteerStrength * steerInput * turningCurve.Evaluate(Mathf.Abs(carVelRatio)) * Mathf.Sign(currCarLocalVel.z) * transform.up, ForceMode.Acceleration);
+
+    
+  }
+  
+  void SidewaysDrag()
+  {
+    float currSidewaysSpeed = currCarLocalVel.x;
+
+    float targetDrag = isDrifting ? dragCoefficient / driftDragMultiplier : dragCoefficient;
+    currDragCoefficient = Mathf.Lerp(currDragCoefficient, targetDrag, Time.deltaTime * driftTransitionSpeed);
+
+    float dragMagnitude = -currSidewaysSpeed * dragCoefficient;
+    Vector3 dragForce = transform.right * dragMagnitude;
+    rb.AddForceAtPosition(dragForce, rb.worldCenterOfMass, ForceMode.Acceleration);
+  }
+  #endregion
+
+  #region Visuals
+  void Visuals()
+  {
+    TireVisuals();
+    VFX();
+  }
+  void TireVisuals()
+  {
+    float steeringAngle = maxSteeringAngle * steerInput;
+    for(int i = 0; i < tires.Length; i++)
+    {
+      if(i < 2)
+      {
+        tires[i].transform.Rotate(Vector3.right, tireRotSpeed * carVelRatio * Time.deltaTime, Space.Self);
+
+        frontTireParents[i].transform.localEulerAngles = new Vector3(frontTireParents[i].transform.localEulerAngles.x, steeringAngle, frontTireParents[i].transform.localEulerAngles.z);
+      }
+      else
+      {
+        tires[i].transform.Rotate(Vector3.right, tireRotSpeed * carVelRatio * Time.deltaTime, Space.Self);
       }
     }
   }
 
-  #endregion
-
-  #region Helpers
-  int GroundedWheelCount()
+  void VFX()
   {
-    int cnt = 0;
-    for (int i = 0; i < wheelsIsGrounded.Length; i++) cnt += wheelsIsGrounded[i];
-    return cnt;
+    if(isGrounded && (isDrifting || Mathf.Abs(currCarLocalVel.x) > minSideSkidVel))
+    {
+      ToggleSkidMarks(true);
+      ToggleSkidSmokes(true);
+      //ToggleSkidSound(true);
+    }
+    else
+    {
+      ToggleSkidMarks(false);
+      ToggleSkidSmokes(false);
+      //ToggleSkidSound(false);
+    }
+  }
+
+  void ToggleSkidMarks(bool toggle)
+  {
+    foreach(var skidMark in skidMarks)
+    {
+      skidMark.emitting = toggle;
+    }
+  }
+
+  void ToggleSkidSmokes(bool toggle)
+  {
+    foreach(var smoke in skidFxs)
+    {
+      if (toggle)
+      {
+        smoke.Play();
+      }
+      else
+      {
+        smoke.Stop();
+      }
+    }
+  }
+  void SetTirePosition(GameObject tire, Vector3 targetPos)
+  {
+    tire.transform.position = targetPos;
   }
   #endregion
+
+  #region Audio
+  //void EngineSound()
+  //{
+  //  engineSound.pitch = Mathf.Lerp(minPitch, maxPitch, Mathf.Abs(carVelRatio));
+  //}
+  //void ToggleSkidSound(bool toggle)
+  //{
+  //  skidSound.mute = !toggle;
+  //}
+  #endregion
+
+
+  #region Car Status Check
+  void GroundCheck()
+  {
+    int tempGroundedWheels = 0;
+
+    for (int i = 0; i < wheelIsGrounded.Length; i++)
+    {
+      tempGroundedWheels += wheelIsGrounded[i];
+    }
+    if (tempGroundedWheels > 1)
+    {
+      isGrounded = true;
+    }
+    else
+    {
+      isGrounded = false;
+    }
+    print(tempGroundedWheels);
+  }
+
+  void CalculateCarVelocity()
+  {
+    currCarLocalVel = transform.InverseTransformDirection(rb.velocity);
+    carVelRatio = currCarLocalVel.z / maxSpeed;
+  }
+  #endregion
+
+  void GetPlayerInput()
+  {
+    moveInput = Input.GetAxis("Vertical");
+    steerInput = Input.GetAxis("Horizontal");
+
+    isDrifting = Mathf.Abs(currCarLocalVel.z) > 1f && Mathf.Abs(steerInput) > 0.1f && Input.GetKey(KeyCode.LeftShift);
+
+    if(moveInput < -0.01f && Mathf.Abs(currCarLocalVel.z) < 0.1f && !readyToReverse)
+    {
+      readyToReverse = true;
+      moveInput = 0;
+    }
+    else
+    {
+      if(moveInput > 0.01f)
+      {
+        readyToReverse = false;
+      }
+      moveInput = this.moveInput;
+    }
+  }
+  #region Suspension
+  void Suspension()
+  {
+
+    for (int i = 0; i < rayPoints.Length; i++)
+    {
+    RaycastHit hit;
+      float maxDistance = restLen + springTravel;
+
+      if (Physics.Raycast(rayPoints[i].position, -rayPoints[i].up, out hit, maxDistance + wheelRadius, drivable))
+      {
+        wheelIsGrounded[i] = 1;
+
+        float currSpringLen = hit.distance - wheelRadius;
+        float springCompression = (restLen - currSpringLen) / springTravel;
+
+        float springVel = Vector3.Dot(rb.GetPointVelocity(rayPoints[i].position), rayPoints[i].up);
+        float dampForce = damperStiffness * springVel;
+
+        float springForce = springStiffness * springCompression;
+
+        float netForce = springForce - dampForce;
+
+        rb.AddForceAtPosition(netForce * rayPoints[i].up, rayPoints[i].position);
+
+        // [수정된 부분] 휠의 위치를 충돌 지점 (hit.point) 에서 휠의 반지름만큼 위로 올립니다.
+        SetTirePosition(tires[i], hit.point + rayPoints[i].up * wheelRadius);
+        Debug.DrawLine(rayPoints[i].position, hit.point, Color.red);
+      
+    }
+      else
+      {
+        wheelIsGrounded[i] = 0;
+
+        SetTirePosition(tires[i], rayPoints[i].position - rayPoints[i].up * (restLen + springTravel));
+        Debug.DrawLine(rayPoints[i].position, rayPoints[i].position + maxDistance * -rayPoints[i].up, Color.green);
+      }
+    }
+  }
+  #endregion
+
+  void OnTriggerEnter(Collider other)
+  {
+    if (other.CompareTag("SpeedUp"))
+    {
+      SpeedUp();
+    }
+  }
+
+  private void SpeedUp()
+  {
+    acceleration = originAccel * speedUpAccelMultiplier;
+    maxSpeed = originMaxSpeed * speedUpMaxSpeedMultiplier;
+    currSpeed += acceleration;
+
+    StartCoroutine(ResetSpeed());
+  }
+
+  IEnumerator ResetSpeed()
+  {
+    yield return new WaitForSeconds(speedUpDuration);
+    currSpeed -= acceleration;
+    acceleration = originAccel;
+    maxSpeed = originMaxSpeed;
+  }
 }
