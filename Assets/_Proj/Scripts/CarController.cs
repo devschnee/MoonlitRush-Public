@@ -50,7 +50,7 @@ public class CarController : MonoBehaviour
     [SerializeField] private float maxSteeringAngle = 30f;
 
     [Header("Ray settings")] //감지 설정
-    private float downDis = 2f;
+    private float downDis = 1.5f;
 
     //스피드 발판    
     Coroutine boostCoroutine;
@@ -71,6 +71,23 @@ public class CarController : MonoBehaviour
         Debug.DrawRay(origin, Vector3.down * downDis, Color.blue);
         bool isDown = Physics.Raycast(origin, Vector3.down, out RaycastHit downHit, downDis);
 
+        if (isDown)
+        {   //스피드 발판 감지
+
+            if (downHit.collider.CompareTag("SpeedPad"))
+            {
+                ISpeedUp speedUp = downHit.collider.GetComponent<ISpeedUp>();
+
+                if (speedUp != null && speedUp != lastSpeedUp)
+                {
+                    speedUp.ApplySpeedUp(gameObject);
+                    lastSpeedUp = speedUp;
+                }
+            }
+            //점프대 감지
+        }
+        else { lastSpeedUp = null; }
+
         UpdateAIControls();
         Suspension();
         GroundCheck();
@@ -81,7 +98,7 @@ public class CarController : MonoBehaviour
 
     void UpdateAIControls()
     {
-        Debug.Log("UpdateAIControls() is running.");        
+        Debug.Log("UpdateAIControls() is running.");
 
         Vector3 target = WaypointTest.GetWaypoint(currentWaypointIndex).position;
         Vector3 localTarget = transform.InverseTransformPoint(target); //InverseTransformPoint(): 월드 좌표를 현재 차량의 로컬 좌표계로 변환
@@ -122,39 +139,40 @@ public class CarController : MonoBehaviour
         Debug.Log($"Current Angle: {angleToNext}, Current Speed: {currentSpeed}"); //콘솔에 찍힘 그렇담 드리프트 로직이 문제란 소리....
 
         currentSpeed = carRB.velocity.magnitude * 3.6f; //rigidbody 속도(m/s)를 km/h로 변환
-        if (angleToNext > 15f && currentSpeed > 70f && !isDrifting) //급커브 드리프트
+        if (angleToNext > 15f && currentSpeed > 60f && !isDrifting) //급커브 드리프트
         {
-            isDrifting = true;            
-            Debug.Log($"Drifting started! Angle: {angleToNext}, Speed: {currentSpeed}");                    
+            isDrifting = true;
+            Debug.Log($"Drifting started! Angle: {angleToNext}, Speed: {currentSpeed}");
         }
         else if (angleToNext < 10f && isDrifting)
         { //직선 구간
             isDrifting = false;
         }
 
-            if (isDrifting)
+        if (isDrifting)
+        {
+            // 드리프트 중에는 조향 강도를 높임
+            steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f) * 5.5f;
+            moveInput = 0.5f;
+           // maxSpeed = 70f;
+        }
+        else // 드리프트 중이 아닐 때, 일반 주행 로직을 실행
+        {
+            //일반 주행
+            steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f);
+            targetSpeed = maxSpeed;
+
+            if (currentSpeed < targetSpeed)
             {
-                // 드리프트 중에는 조향 강도를 높임
-                steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f) * 7f;
-                moveInput = 0.5f;                
+                moveInput = 1f;
             }
-            else // 드리프트 중이 아닐 때, 일반 주행 로직을 실행
-            {
-                //일반 주행
-                steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f);
-                targetSpeed = maxSpeed;
-               
-                if (currentSpeed < targetSpeed)
-                {
-                    moveInput = 1f;
-                }
-                else
-                {//목표 속도에 도달하면 가속을 멈추거나 필요 시 감소
-                    moveInput = 0f;
-                }
+            else
+            {//목표 속도에 도달하면 가속을 멈추거나 필요 시 감소
+                moveInput = 0f;
             }
-        
-        
+        }
+
+
         //다음 Waypoint 확인        
         float distance = Vector3.Distance(transform.position, target);
         if (distance < 10f)
@@ -281,7 +299,8 @@ public class CarController : MonoBehaviour
 
         void Decelerate()
         {
-            if (isDrifting && carLocalVelocity.z > targetSpeed) {
+            if (isDrifting && carLocalVelocity.z > targetSpeed)
+            {
                 carRB.AddForce(brakingDeceleration * -carRB.transform.forward, ForceMode.Acceleration);
             }
             // AI는 키 입력 대신 속도에 따라 감속
