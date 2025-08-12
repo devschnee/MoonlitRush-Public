@@ -1,7 +1,10 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEditor;
+using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
+  public float currSpeed;
   #region References
   [Header("References")]
   [SerializeField] private Rigidbody rb;
@@ -14,7 +17,6 @@ public class CarController : MonoBehaviour
   [SerializeField] private ParticleSystem[] skidFxs = new ParticleSystem[2];
   [SerializeField] private AudioSource engineSound, skidSound;
   #endregion
-
   #region Suspension
   [Header("Suspension Settings")]
   [SerializeField] private float springStiffness = 30000f;
@@ -26,6 +28,8 @@ public class CarController : MonoBehaviour
   int[] wheelIsGrounded = new int[4];
   bool isGrounded = false;
 
+  [Header("Reverse")]
+  [SerializeField] private float reverseMaxSpeed = 20f;
 
   [Header("Car Settings")]
   [SerializeField] private float acceleration = 25f;
@@ -34,6 +38,21 @@ public class CarController : MonoBehaviour
   [SerializeField] private float steerForce = 15f;
   [SerializeField] private AnimationCurve turningCurve;
   [SerializeField] private float dragCoefficient;
+
+  [Header("Gear")]
+  [SerializeField, Range(1, 5)] private int maxGears = 5;
+  [SerializeField] private float[] gearsPercents = new float[] { 0.18f, 0.36f, 0.56f, 0.78f, 1 };
+  //[SerializeField] private float[] gearAccelMultipliers = new float[] { 1.8f, 1.5f, 1.25f, 1f, 0.8f };
+  [SerializeField] private float holdTopSpeed = 5f; // 자동 변속 전 기어 별 최고 속도에서 유지하는 시간(s)
+  [SerializeField, Range(0.01f, 0.2f)] private float dropBeforeShiftPercent = 0.05f; // 변속 전 기어 별 최고 속도에서 잠깐 속도 줄이는 비율(%)[실제 기어 변속 하듯이 <- 수동 변속기 클러치 떼는 순간 속도 살짝 줄어드는 느낌]
+  [SerializeField] private float shiftLag = 0.3f;
+  [SerializeField] private float upShiftHysteresis = 0.02f;
+  [SerializeField] private float minTimeBetweenShifts = 0.3f;
+
+  private int currGear = 1; // 현재 기어 단
+  private bool isHoldingTop = false; // 기어 최고 속도에서 속도 유지했는지
+  private float holdTimer = 0f;
+  private bool didDropBeforeShift = false; // 변속 전 속도 떨어뜨렸는지
 
   [Header("Drift")]
   [SerializeField] private float driftDragMultiplier = 2f;
@@ -67,6 +86,7 @@ public class CarController : MonoBehaviour
   void Update()
   {
     GetPlayerInput();
+    currSpeed = rb.velocity.magnitude;
   }
 
   void FixedUpdate()
@@ -76,6 +96,9 @@ public class CarController : MonoBehaviour
     CalculateCarVelocity();
     Movement();
     Visuals();
+    ApplyGearHoldAndCap();
+    GearLogic();
+    ApplyReverseSpeed();
     //EngineSound();
   }
 
@@ -129,6 +152,19 @@ public class CarController : MonoBehaviour
   void Deceleration()
   {
     rb.AddForceAtPosition(deceleration * moveInput * -transform.forward, accelPoint.position, ForceMode.Acceleration);
+  }
+
+  void ApplyReverseSpeed()
+  {
+    if(currCarLocalVel.z < 0)
+    {
+      if (Mathf.Abs(currCarLocalVel.z) > reverseMaxSpeed)
+      {
+        Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+        lv.z = -reverseMaxSpeed;
+        rb.velocity = transform.TransformDirection(lv);
+      }
+    }
   }
 
   void Turn()
@@ -261,25 +297,102 @@ public class CarController : MonoBehaviour
 
   void GetPlayerInput()
   {
-    moveInput = Input.GetAxis("Vertical");
+    float rawInput = Input.GetAxis("Vertical");
     steerInput = Input.GetAxis("Horizontal");
 
     isDrifting = Mathf.Abs(currCarLocalVel.z) > 1f && Mathf.Abs(steerInput) > 0.1f && Input.GetKey(KeyCode.LeftShift);
 
-    if (moveInput < -0.01f && Mathf.Abs(currCarLocalVel.z) < 0.1f && !readyToReverse)
+    if (rawInput < -0.01f && Mathf.Abs(currCarLocalVel.z) < 0.1f && !readyToReverse)
     {
       readyToReverse = true;
       moveInput = 0;
     }
     else
     {
-      if (moveInput > 0.01f)
+      if (rawInput > 0.01f)
       {
         readyToReverse = false;
       }
-      moveInput = this.moveInput;
+      moveInput = rawInput;
     }
   }
+
+  #region Gear Shift
+  void GearLogic()
+  {
+    // 후진하거나 정지할때 기어 변속 중지
+    if (currCarLocalVel.z <= 0)
+    {
+      currGear = 1; // 기어는 항상 1단으로 유지
+      isHoldingTop = false;
+      holdTimer = 0f;
+      didDropBeforeShift = false;
+      return;
+    }
+    int max = Mathf.Clamp(maxGears, 1, 5); // 5단 기어
+    if (gearsPercents.Length != max) Array.Resize(ref gearsPercents, max);
+    gearsPercents[max - 1] = 1f;
+
+    float fwdSpeed = Mathf.Max(0f, currCarLocalVel.z);
+    float speedRatio = Mathf.Clamp01(fwdSpeed / Mathf.Max(0.01f, maxSpeed));
+    float currTop = gearsPercents[Mathf.Clamp(currGear - 1, 0, max - 1)];
+
+    if (!isHoldingTop)
+    {
+      if(speedRatio >= currTop && currGear < max)
+      {
+        isHoldingTop = true;
+        holdTimer = holdTopSpeed;
+        didDropBeforeShift = false;
+      }
+    }
+    else
+    {
+      holdTimer -= Time.deltaTime;
+      if(holdTimer <= 0f)
+      {
+        if (!didDropBeforeShift)
+        {
+          DropForwardSpeedByPercent(dropBeforeShiftPercent);
+          didDropBeforeShift = true;
+        }
+        currGear = Mathf.Min(currGear + 1, max);
+        isHoldingTop = false;
+      }
+    }
+  }
+
+  void DropForwardSpeedByPercent(float percent)
+  {
+    percent = Mathf.Clamp01(percent);
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    if(lv.z > 0f)
+    {
+      lv.z *= (1f - percent);
+      rb.velocity = transform.TransformDirection(lv);
+    }
+  }
+
+  void ApplyGearHoldAndCap()
+  {
+    int max = Mathf.Clamp(maxGears, 1, 5);
+    float currTop = gearsPercents[Mathf.Clamp(currGear - 1, 0, max - 1)];
+    float gearTopSpeed = maxSpeed * currTop;
+
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    if(lv.z > gearTopSpeed)
+    {
+      lv.z = gearTopSpeed;
+      rb.velocity = transform.TransformDirection(lv);
+    }
+
+    if(isHoldingTop && moveInput > 0f)
+    {
+      moveInput = 0f;
+    }
+  }
+  #endregion
+
   #region Suspension
   void Suspension()
   {
