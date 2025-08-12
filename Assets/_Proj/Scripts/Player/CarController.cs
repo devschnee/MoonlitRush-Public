@@ -66,6 +66,11 @@ public class CarController : MonoBehaviour
   float steerInput = 0;
   bool isDrifting = false;
 
+  [Header("Weight Feel (Minimal)")]
+  [SerializeField] private float baseDownforce = 300f;
+  [SerializeField] private float downforcePerMS = 0.6f; // 속도(m/s)당 추가 눌림
+  [SerializeField] private float maxDownforce = 1000f;  // 과접지 방지 캡
+
   [Header("Visuals")]
   [SerializeField] private float tireRotSpeed = 3000f;
   [SerializeField] private float maxSteeringAngle = 30f;
@@ -92,7 +97,7 @@ public class CarController : MonoBehaviour
   {
     Suspension();
     GroundCheck();
-    CalculateCarVelocity();
+    CalculateCarVelocity(); ApplyDownforce();
     Movement();
     Visuals();
     ApplyGearHoldAndCap();
@@ -134,7 +139,7 @@ public class CarController : MonoBehaviour
 
   void Acceleration()
   {
-    
+
     // 후륜 구동 : 뒷바퀴 1 (index 2)
     if (tires.Length > 2)
     {
@@ -155,7 +160,7 @@ public class CarController : MonoBehaviour
 
   void ApplyReverseSpeed()
   {
-    if(currCarLocalVel.z < 0)
+    if (currCarLocalVel.z < 0)
     {
       if (Mathf.Abs(currCarLocalVel.z) > reverseMaxSpeed)
       {
@@ -185,7 +190,15 @@ public class CarController : MonoBehaviour
     Vector3 dragForce = transform.right * dragMagnitude;
     rb.AddForceAtPosition(dragForce, rb.worldCenterOfMass, ForceMode.Acceleration);
   }
+  void ApplyDownforce()
+  {
+    if (!isGrounded) return; // 공중에선 X
+    float v = rb.velocity.magnitude;               // m/s
+    float down = Mathf.Min(baseDownforce + downforcePerMS * v, maxDownforce);
+    rb.AddForce(-transform.up * down, ForceMode.Force);
+  }
   #endregion
+  
 
   #region Visuals
   void Visuals()
@@ -339,7 +352,7 @@ public class CarController : MonoBehaviour
 
     if (!isHoldingTop)
     {
-      if(speedRatio >= currTop && currGear < max)
+      if (speedRatio >= currTop && currGear < max)
       {
         isHoldingTop = true;
         holdTimer = holdTopSpeed;
@@ -349,7 +362,7 @@ public class CarController : MonoBehaviour
     else
     {
       holdTimer -= Time.deltaTime;
-      if(holdTimer <= 0f)
+      if (holdTimer <= 0f)
       {
         if (!didDropBeforeShift)
         {
@@ -366,7 +379,7 @@ public class CarController : MonoBehaviour
   {
     percent = Mathf.Clamp01(percent);
     Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-    if(lv.z > 0f)
+    if (lv.z > 0f)
     {
       lv.z *= (1f - percent);
       rb.velocity = transform.TransformDirection(lv);
@@ -380,13 +393,13 @@ public class CarController : MonoBehaviour
     float gearTopSpeed = maxSpeed * currTop;
 
     Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-    if(lv.z > gearTopSpeed)
+    if (lv.z > gearTopSpeed)
     {
       lv.z = gearTopSpeed;
       rb.velocity = transform.TransformDirection(lv);
     }
 
-    if(isHoldingTop && moveInput > 0f)
+    if (isHoldingTop && moveInput > 0f)
     {
       moveInput = 0f;
     }

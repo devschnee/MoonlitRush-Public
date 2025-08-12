@@ -768,7 +768,7 @@ Transform:
   m_GameObject: {fileID: 673453125}
   serializedVersion: 2
   m_LocalRotation: {x: -0.29429302, y: -0, z: -0, w: 0.95571524}
-  m_LocalPosition: {x: -2.29, y: 0.072, z: 0.318}
+  m_LocalPosition: {x: -2.29, y: 0.072, z: -1.83}
   m_LocalScale: {x: 1.35, y: 0.027731556, z: 0.37}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1488,6 +1488,9 @@ MonoBehaviour:
   minTimeBetweenShifts: 0.3
   driftDragMultiplier: 2
   driftTransitionSpeed: 5
+  baseDownforce: 350
+  downforcePerMS: 0.7
+  maxDownforce: 1200
   tireRotSpeed: 3000
   maxSteeringAngle: 3
   minSideSkidVel: 10
