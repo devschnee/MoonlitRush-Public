@@ -17,7 +17,7 @@ public class BoosterItem : MonoBehaviour
   {
     isBoost = true;
 
-    var controller = GetComponent<PlayerController>();
+    var controller = GetComponent<CarController>();
     if (controller != null)
       //controller.ApplyBoost(power);
 

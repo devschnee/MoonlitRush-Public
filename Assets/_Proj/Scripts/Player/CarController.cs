@@ -15,7 +15,9 @@ public class CarController : MonoBehaviour
   [SerializeField] private TrailRenderer[] skidMarks = new TrailRenderer[2];
   [SerializeField] private ParticleSystem[] skidFxs = new ParticleSystem[2];
   [SerializeField] private AudioSource engineSound, skidSound;
+  [SerializeField] private BoostApplyer boostApplyer;
   #endregion
+
   #region Suspension
   [Header("Suspension Settings")]
   [SerializeField] private float springStiffness = 30000f;
@@ -38,20 +40,19 @@ public class CarController : MonoBehaviour
   [SerializeField] private AnimationCurve turningCurve;
   [SerializeField] private float dragCoefficient;
 
+  #region Gear Settings
   [Header("Gear")]
   [SerializeField, Range(1, 5)] private int maxGears = 5;
   [SerializeField] private float[] gearsPercents = new float[] { 0.18f, 0.36f, 0.56f, 0.78f, 1 };
   //[SerializeField] private float[] gearAccelMultipliers = new float[] { 1.8f, 1.5f, 1.25f, 1f, 0.8f };
-  [SerializeField] private float holdTopSpeed = 5f; // 자동 변속 전 기어 별 최고 속도에서 유지하는 시간(s)
-  [SerializeField, Range(0.01f, 0.2f)] private float dropBeforeShiftPercent = 0.05f; // 변속 전 기어 별 최고 속도에서 잠깐 속도 줄이는 비율(%)[실제 기어 변속 하듯이 <- 수동 변속기 클러치 떼는 순간 속도 살짝 줄어드는 느낌]
-  [SerializeField] private float shiftLag = 0.3f;
-  [SerializeField] private float upShiftHysteresis = 0.02f;
-  [SerializeField] private float minTimeBetweenShifts = 0.3f;
+  [SerializeField] private float holdTopSpeed = 1f; // 자동 변속 전 기어 별 최고 속도에서 유지하는 시간(s)
+  [SerializeField, Range(0.01f, 0.2f)] private float dropBeforeShiftPercent = 0.1f; // 변속 전 기어 별 최고 속도에서 잠깐 속도 줄이는 비율(%)[실제 기어 변속 하듯이 <- 수동 변속기 클러치 떼는 순간 속도 살짝 줄어드는 느낌]
 
   private int currGear = 1; // 현재 기어 단
   private bool isHoldingTop = false; // 기어 최고 속도에서 속도 유지했는지
   private float holdTimer = 0f;
   private bool didDropBeforeShift = false; // 변속 전 속도 떨어뜨렸는지
+  #endregion
 
   [Header("Drift")]
   [SerializeField] private float driftDragMultiplier = 2f;
@@ -65,6 +66,18 @@ public class CarController : MonoBehaviour
   float moveInput = 0;
   float steerInput = 0;
   bool isDrifting = false;
+
+  #region Airbourne
+  [Header("Airbourne Settings")]
+  [SerializeField, Range(0, 1)] private float airGravity = 0.4f;
+  [SerializeField] private float airGravityDuration = 2f;
+  [SerializeField] private float lvTorqueStrength = 8f;
+  [SerializeField] private float lvTorqueDamping = 0.6f;
+  [SerializeField] private float maxLvTorque = 200f;
+
+  private float airTimer = 0f;
+  private bool isAir = true;
+  #endregion
 
   [Header("Weight Feel (Minimal)")]
   [SerializeField] private float baseDownforce = 300f;
@@ -97,12 +110,21 @@ public class CarController : MonoBehaviour
   {
     Suspension();
     GroundCheck();
-    CalculateCarVelocity(); ApplyDownforce();
+
+    if (!isGrounded && isAir)
+    {
+      airTimer = airGravityDuration;
+    }
+    isAir = isGrounded;
+
+    CalculateCarVelocity(); 
+    ApplyDownforce();
     Movement();
     Visuals();
     ApplyGearHoldAndCap();
     GearLogic();
     ApplyReverseSpeed();
+    Airbourne();
     //EngineSound();
   }
 
@@ -198,7 +220,36 @@ public class CarController : MonoBehaviour
     rb.AddForce(-transform.up * down, ForceMode.Force);
   }
   #endregion
-  
+
+  #region Airbourne
+  void Airbourne()
+  {
+    if (!isGrounded)
+    {
+      if(airTimer > 0f)
+      {
+        Vector3 deltaF = rb.mass * (airGravity - 1f) * Physics.gravity;
+        rb.AddForce(deltaF, ForceMode.Force);
+        airTimer = -Time.fixedDeltaTime;
+      }
+
+      Vector3 up = transform.up;
+      Vector3 toUpAxis = Vector3.Cross(up, Vector3.up);
+      float sinAngle = toUpAxis.magnitude;
+      if(sinAngle > 1e-4f)
+      {
+        Vector3 torqueDir = toUpAxis.normalized;
+        float angle = Mathf.Asin(Mathf.Clamp(sinAngle, -1f, 1f));
+
+        Vector3 corrective = torqueDir * (lvTorqueStrength * angle) -rb.angularVelocity * lvTorqueDamping;
+
+        corrective = Vector3.ClampMagnitude(corrective, maxLvTorque);
+
+        rb.AddTorque(corrective, ForceMode.Acceleration);
+      }
+    }
+  }
+  #endregion
 
   #region Visuals
   void Visuals()
@@ -226,17 +277,16 @@ public class CarController : MonoBehaviour
 
   void VFX()
   {
-    if (isGrounded && (isDrifting || Mathf.Abs(currCarLocalVel.x) > minSideSkidVel))
+    bool allowFwdFx = (currCarLocalVel.z > 0.1f || moveInput > 0.01f) && currCarLocalVel.z >= 0f;
+
+    bool doSkid = (isGrounded && allowFwdFx) && (isDrifting || Mathf.Abs(currCarLocalVel.x) > minSideSkidVel);
+
+    ToggleSkidMarks(doSkid);
+    ToggleSkidSmokes(doSkid);
+
+    if(boostApplyer != null && boostApplyer.fx != null)
     {
-      ToggleSkidMarks(true);
-      ToggleSkidSmokes(true);
-      //ToggleSkidSound(true);
-    }
-    else
-    {
-      ToggleSkidMarks(false);
-      ToggleSkidSmokes(false);
-      //ToggleSkidSound(false);
+      boostApplyer.fx.SetEmission(allowFwdFx);
     }
   }
 
@@ -448,33 +498,25 @@ public class CarController : MonoBehaviour
   #region Trigger
   void OnTriggerEnter(Collider other)
   {
-    float effectDuration = 0;
-    if (other.CompareTag("SpeedUp"))
+    if (currCarLocalVel.z > 0.1f)
     {
-      Debug.Log($"감지 : {other.tag}");
-      if (acceleration + 20f >= maxSpeed) acceleration = Mathf.Min(acceleration + 20f, maxSpeed);
-      else { acceleration += 20f; }
-      effectDuration = 3f;
-      ApplyEffects(effectDuration);
-    }
+      if (other.CompareTag("SpeedUp"))
+      {
+        Debug.Log($"감지 : {other.tag}");
+        if (boostApplyer != null)
+        {
+          boostApplyer.ApplyBoost(2f, 1.1f, 1.5f);
+        }
+      }
 
-    if (other.CompareTag("Barrel"))
-    {
-      Debug.Log($"감지 : {other.tag}");
-      if (acceleration + 30f >= maxSpeed) acceleration = Mathf.Min(acceleration + 30f, maxSpeed);
-      else { acceleration += 30f; }
-      effectDuration = 4f;
-      ApplyEffects(effectDuration);
-    }
-  }
-
-  void ApplyEffects(float timer)
-  {
-    float originSpeed = acceleration;
-    timer -= Time.deltaTime;
-    if (timer <= 0)
-    {
-      acceleration = originSpeed;
+      if (other.CompareTag("Barrel"))
+      {
+        Debug.Log($"감지 : {other.tag}");
+        if (boostApplyer != null)
+        {
+          boostApplyer.ApplyBoost(3f, 1.1f, 2f);
+        }
+      }
     }
   }
   #endregion
