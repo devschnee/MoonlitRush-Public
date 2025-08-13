@@ -234,21 +234,27 @@ public class CarController : MonoBehaviour
   #region Airbourne
   void Airbourne()
   {
-    if (!isGrounded)
+    if (airTimer > 0f)
     {
-        Vector3 up = transform.up;
-        Vector3 toUpAxis = Vector3.Cross(up, Vector3.up);
-        float sinAngle = toUpAxis.magnitude;
-        if (sinAngle > 1e-4f)
-        {
-          Vector3 torqueDir = toUpAxis.normalized;
-          float angle = Mathf.Asin(Mathf.Clamp(sinAngle, -1f, 1f));
-          Vector3 corrective = torqueDir * (8f * angle) - rb.angularVelocity * 0.6f;
-          corrective = Vector3.ClampMagnitude(corrective, 200f);
-          rb.AddTorque(corrective, ForceMode.Acceleration);
-        }
-      }
-    
+      Vector3 deltaF = rb.mass * (airGravity - 1f) * Physics.gravity;
+      rb.AddForce(deltaF, ForceMode.Force);
+      airTimer = -Time.fixedDeltaTime;
+    }
+
+    Vector3 up = transform.up;
+    Vector3 toUpAxis = Vector3.Cross(up, Vector3.up);
+    float sinAngle = toUpAxis.magnitude;
+    if (sinAngle > 1e-4f)
+    {
+      Vector3 torqueDir = toUpAxis.normalized;
+      float angle = Mathf.Asin(Mathf.Clamp(sinAngle, -1f, 1f));
+
+      Vector3 corrective = torqueDir * (lvTorqueStrength * angle) - rb.angularVelocity * lvTorqueDamping;
+
+      corrective = Vector3.ClampMagnitude(corrective, maxLvTorque);
+
+      rb.AddTorque(corrective, ForceMode.Acceleration);
+    }
   }
   #endregion
  
