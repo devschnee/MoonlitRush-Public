@@ -5,17 +5,21 @@ TagManager:
   serializedVersion: 2
   tags:
   - SpeedUp
+  - Barrel
+  - ItemBooster
+  - ItemMissile
   - BoostPad
+  - ItemShield
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ground
   - Water
   - UI
-  - Ground
   - Track
-  - MinimapIcon
+  - Items
+  - 
   - 
   - 
   - 
