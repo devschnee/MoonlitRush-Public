@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ItemCollector : MonoBehaviour
 {
-  public ItemSlot itemSlot;
+  public ItemSlot itemSlots;
 
   [Tooltip("PickupItem에 itemData없을때 사용하는 Scriptable Object")]
   public ItemData defaultBooster;
@@ -12,14 +12,28 @@ public class ItemCollector : MonoBehaviour
 
   void OnTriggerEnter(Collider other)
   {
-    if (!other.CompareTag("ItemBooster") || !other.CompareTag("ItemShield") || !other.CompareTag("ItemMissile")) return;
+    Debug.Log("Trigger Enter with: " + other.name + " | Tag: " + other.tag);
 
+    if (!other.CompareTag("ItemBooster") && !other.CompareTag("ItemShield") && !other.CompareTag("ItemMissile")) return;
+
+    Debug.Log("Trigger with: " + other.tag);
     var pick = other.GetComponent<PickupItem>();
-    ItemData data = pick != null && pick.itemData != null ? pick.itemData : (other.CompareTag("ItemBooster") ? defaultBooster : defaultShield);
 
-    if(data == null || itemSlot == null) return;
+    // 데이터 선택 로직
+    ItemData data = null;
+    if (pick != null && pick.itemData != null) data = pick.itemData;
+    else
+    {
+      if (other.CompareTag("ItemBooster")) data = defaultBooster;
+      else if (other.CompareTag("ItemShield")) data = defaultShield;
+      //else if (other.CompareTag("ItemMissile")) data = defaultMissile;
+    }
+    
+    if (data == null || itemSlots == null) return;
 
-    if(!itemSlot.AddItem(data)) return;
+
+    // 성공 시에만 이어서 파괴/리스폰 진행
+    if(itemSlots.AddItem(data)) return;
 
     Vector3 pos = other.transform.position;
     Quaternion rot = other.transform.rotation;
@@ -31,6 +45,7 @@ public class ItemCollector : MonoBehaviour
     }
     else
     {
+      // 프리팹 미지정 시 : 비활성 -> 3초 후 활성
       StartCoroutine(DisEnableCoroutine(other.gameObject, 3f));
     }
   }
