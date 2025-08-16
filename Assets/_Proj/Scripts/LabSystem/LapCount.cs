@@ -7,6 +7,8 @@ public class LapCounter : MonoBehaviour
     public int nextCheckpointIndex = 0;
     private bool raceFinished = false;
 
+
+
     public void PassCheckpoint(int checkpointIndex)
     {
         if (raceFinished) return;

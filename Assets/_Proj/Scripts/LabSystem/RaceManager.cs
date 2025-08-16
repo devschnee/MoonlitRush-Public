@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.TextCore;
 
 public class RaceManager : MonoBehaviour
 {
     public static RaceManager Instance;
 
     public int totalLaps = 1;
-    public List<Checkpoint> checkpoints = new List<Checkpoint>();
+    public List<Checkpoint_Me> checkpoints = new List<Checkpoint_Me>();
     public List<RacerInfo> racers = new List<RacerInfo>();
 
     private void Awake()
@@ -17,12 +16,14 @@ public class RaceManager : MonoBehaviour
         Instance = this;
     }
 
-    public void RegisterCheckpoint(Checkpoint cp)
+    //checkpoint 등록
+    public void RegisterCheckpoint(Checkpoint_Me cp)
     {
         if (!checkpoints.Contains(cp))
             checkpoints.Add(cp);
     }
 
+    //차량 등록
     public void RegisterRacer(RacerInfo racer)
     {
         if (!racers.Contains(racer))
@@ -31,19 +32,23 @@ public class RaceManager : MonoBehaviour
 
     private void Update()
     {
-        UpdateRanking();
+       // UpdateRanking();
     }
 
     void UpdateRanking()
     {
         racers = racers
+            //1차 정렬(내림차순): 현재 완료한 바퀴 수
             .OrderByDescending(r => r.lapCounter.currentLap)
+            //2차 정렬(내림차순): 통과한 checkpoint 수
             .ThenByDescending(r => r.lapCounter.nextCheckpointIndex)
+            //3차 정렬(오름차순): 다음 checkpoint까지 거리가 짧은 정도
             .ThenBy(r => Vector3.Distance(
                 r.transform.position,
                 checkpoints[r.lapCounter.nextCheckpointIndex].transform.position))
-            .ToList();
+            .ToList(); //LINQ 결과 리스트 생성
 
+        //정렬된 리스트 순서대로 랭킹 번호 부여
         for (int i = 0; i < racers.Count; i++)
         {
             racers[i].currentRank = i + 1;

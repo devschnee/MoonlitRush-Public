@@ -8,7 +8,7 @@ public class StartCount : MonoBehaviour
 {
     public TextMeshProUGUI startCountText;
 
-   // public CarController playerCar;
+   //public CarController playerCar;
     public AICarController_2 AICar;
 
     private void Start()
@@ -34,11 +34,12 @@ public class StartCount : MonoBehaviour
         SetMovement(true);
     }
 
+    //카운트 중 움직임 막음
     void SetMovement(bool movement)
     {
         //if (playerCar != null)
         //{
-        //    playerCar.
+        //    playerCar.moveStart = movement;
         //}
 
         if (AICar != null) {
@@ -48,5 +49,4 @@ public class StartCount : MonoBehaviour
 }
 
 //빈 오브젝트에 부착
-//플레이어에 변수 하나 추가 (ex: moveStart)
-//UI 카운트 다운 만들기 텍스트 mesh
+//플레이어에 bool 변수 하나 추가 (ex: moveStart)
