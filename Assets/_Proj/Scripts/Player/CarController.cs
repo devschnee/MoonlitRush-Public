@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class CarController : MonoBehaviour
@@ -106,6 +107,9 @@ public class CarController : MonoBehaviour
   [SerializeField]
   [Range(1, 5)] private float maxPitch = 5f;
 
+  bool isBarrelRolling = false;
+  public float barrelRollTorque = 100f;
+  public float barrelRollDuration = 1.5f;
   void Awake()
   {
     rb = GetComponent<Rigidbody>();
@@ -546,12 +550,8 @@ public class CarController : MonoBehaviour
       if (other.CompareTag("Barrel"))
       {
         Debug.Log($"감지 : {other.tag}");
-        if (boostApplyer != null)
-        {
-          boostApplyer.ApplyBoost(3f, 1.1f, 2f);
-        }
-        lv.z = Mathf.Max(lv.z, 32f); // 배럴롤에는 좀 더 강하게
-        rb.velocity = transform.TransformDirection(lv);
+        if (!isBarrelRolling)
+          StartCoroutine(BarrelRollCoroutine());
       }
 
       if (other.CompareTag("BoostPad"))
@@ -567,4 +567,32 @@ public class CarController : MonoBehaviour
     }
   }
   #endregion
+
+  IEnumerator BarrelRollCoroutine()
+  {
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    if (boostApplyer != null)
+      boostApplyer.ApplyBoost(3, 1.1f, 2f);
+    lv.z = Mathf.Max(lv.z, 32f); // 배럴롤에는 좀 더 강하게
+    rb.velocity = transform.TransformDirection(lv);
+
+    yield return new WaitForSeconds(0.4f);
+    yield return new WaitUntil(() => !isGrounded);
+
+
+    isBarrelRolling = true;
+    float timer = barrelRollDuration;
+    float rollDir = Mathf.Sign(steerInput);
+
+    while (timer > 0)
+    {
+      rb.AddTorque(transform.forward * barrelRollTorque, ForceMode.Acceleration);
+      timer -= Time.deltaTime;
+      yield return null;
+    }
+
+    isBarrelRolling = false;
+
+    moveInput = 1f;
+  }
 }

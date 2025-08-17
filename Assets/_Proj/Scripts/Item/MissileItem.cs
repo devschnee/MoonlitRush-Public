@@ -22,6 +22,8 @@ public class MissileItem : MonoBehaviour
     GameObject missile = Instantiate(missilePrefab, shotPoint.position, shotPoint.rotation);
     missile.transform.localRotation = missilePrefab.transform.localRotation;
     Debug.Log(missile);
+    TrailRenderer trail = missile.GetComponentInChildren<TrailRenderer>();
+    if (trail != null) { trail.Clear(); }
 
     MissileProj proj = missile.GetComponent<MissileProj>();
     Debug.Log("Proj?" + (proj!=null));

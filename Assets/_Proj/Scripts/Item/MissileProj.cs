@@ -17,7 +17,7 @@ public class MissileProj : MonoBehaviour
   void Start()
   {
     rb = GetComponent<Rigidbody>();
-
+    
     if (debugTestMode)
     {
       // 제자리 고정, Init() 안 불려도 충돌 살아있음
