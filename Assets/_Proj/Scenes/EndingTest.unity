@@ -274,6 +274,17 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2434493700430791862, guid: 3d9253b0c54ffed4bb1286037c6ff052,
+        type: 3}
+      propertyPath: shotPoint
+      value: 
+      objectReference: {fileID: 2082921928}
+    - target: {fileID: 2434493700430791862, guid: 3d9253b0c54ffed4bb1286037c6ff052,
+        type: 3}
+      propertyPath: missilePrefab
+      value: 
+      objectReference: {fileID: 3371793982307454536, guid: bc2198720dbdf544aaf5d0bafb0aaa63,
+        type: 3}
     - target: {fileID: 2974337993929925243, guid: 3d9253b0c54ffed4bb1286037c6ff052,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -334,30 +345,15 @@ PrefabInstance:
       propertyPath: slotUI
       value: 
       objectReference: {fileID: 1162394259}
-    - target: {fileID: 6172607653121705664, guid: 3d9253b0c54ffed4bb1286037c6ff052,
-        type: 3}
-      propertyPath: barrelRollTorque
-      value: 100
-      objectReference: {fileID: 0}
-    - target: {fileID: 6363544735499996230, guid: 3d9253b0c54ffed4bb1286037c6ff052,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.93
-      objectReference: {fileID: 0}
-    - target: {fileID: 6363544735499996230, guid: 3d9253b0c54ffed4bb1286037c6ff052,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.62
-      objectReference: {fileID: 0}
     - target: {fileID: 6730540285887767060, guid: 3d9253b0c54ffed4bb1286037c6ff052,
         type: 3}
       propertyPath: m_Name
       value: VCar
       objectReference: {fileID: 0}
-    - target: {fileID: 7867930746220640781, guid: 3d9253b0c54ffed4bb1286037c6ff052,
+    - target: {fileID: 8138900496560597663, guid: 3d9253b0c54ffed4bb1286037c6ff052,
         type: 3}
-      propertyPath: m_Name
-      value: CapsuleCollider
+      propertyPath: m_LocalPosition.y
+      value: 0.363
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -682,13 +678,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 417462287}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.8087472, y: -0.12300836, z: 0.12709738, w: 0.5609307}
-  m_LocalPosition: {x: 0.0448, y: -0.034, z: 0.5742}
-  m_LocalScale: {x: 0.27000004, y: 0.5, z: 0.1}
+  m_LocalRotation: {x: -0.3385354, y: 0.084406346, z: 0.22671956, w: 0.9093226}
+  m_LocalPosition: {x: 0.027454242, y: -0.012479202, z: 0.59}
+  m_LocalScale: {x: 0.27000004, y: 0.027731556, z: 0.20133115}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 179362532}
-  m_LocalEulerAnglesHint: {x: -61.168, y: -134.565, z: 134.908}
+  m_LocalEulerAnglesHint: {x: -40.84, y: 0, z: 28}
 --- !u!1 &451657939
 GameObject:
   m_ObjectHideFlags: 0
@@ -1762,8 +1758,6 @@ MonoBehaviour:
   minSideSkidVel: 10
   minPitch: 1
   maxPitch: 5
-  barrelRollTorque: 250
-  barrelRollDuration: 1.5
 --- !u!4 &1099935243
 Transform:
   m_ObjectHideFlags: 0
@@ -2107,7 +2101,7 @@ PrefabInstance:
     - target: {fileID: 8900107535191509849, guid: bc2198720dbdf544aaf5d0bafb0aaa63,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -40.21
+      value: -36.73779
       objectReference: {fileID: 0}
     - target: {fileID: 8900107535191509849, guid: bc2198720dbdf544aaf5d0bafb0aaa63,
         type: 3}
@@ -2117,7 +2111,7 @@ PrefabInstance:
     - target: {fileID: 8900107535191509849, guid: bc2198720dbdf544aaf5d0bafb0aaa63,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -87.82
+      value: -92.53111
       objectReference: {fileID: 0}
     - target: {fileID: 8900107535191509849, guid: bc2198720dbdf544aaf5d0bafb0aaa63,
         type: 3}
@@ -3134,6 +3128,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2023369874}
   m_CullTransparentMesh: 1
+--- !u!4 &2082921928 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8138900496560597663, guid: 3d9253b0c54ffed4bb1286037c6ff052,
+    type: 3}
+  m_PrefabInstance: {fileID: 244911441}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2146155862
 PrefabInstance:
   m_ObjectHideFlags: 0
