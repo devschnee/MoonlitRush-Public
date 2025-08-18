@@ -2,7 +2,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 
-public class LeaderboardUI : MonoBehaviour
+public class RaceRankUI : MonoBehaviour
 {
     [Header("UI References")]
     public List<TextMeshProUGUI> nameTexts; // 이미 배치된 TextMeshProUGUI 리스트

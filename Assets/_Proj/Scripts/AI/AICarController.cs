@@ -78,6 +78,15 @@ public class AICarController : MonoBehaviour
 
     public bool isInvincible = false;
 
+    [Header("Recovery Settings")]
+    [SerializeField] private float stuckTimeThreshold = 3f; // 멈췄다고 판단하는 시간 (초)
+    [SerializeField] private float recoveryTime = 1f;      // 복구 후 다시 움직이는 딜레이
+    [SerializeField] private float rotationResetSpeed = 1f; // 회전 복구 속도
+
+    private Vector3 lastPosition;
+    private float stuckTimer;
+    private bool isRecovering = false;
+
     private void Start()
     {
         carRB = GetComponent<Rigidbody>();
@@ -130,6 +139,8 @@ public class AICarController : MonoBehaviour
         Movement();
         Visuals();
         VFX();
+        CheckForStuck();
+        CheckForFlip();
     }
 
     void UpdateAIControls()
@@ -140,27 +151,39 @@ public class AICarController : MonoBehaviour
         Vector3 localTarget = transform.InverseTransformPoint(target); //InverseTransformPoint(): 월드 좌표를 현재 차량의 로컬 좌표계로 변환
 
         //전방 레이캐스트
-        //RaycastHit hit;
-        //float rayDistance = 20f; // 레이캐스트 거리
-        //if (Physics.Raycast(transform.position, transform.forward, out hit, rayDistance, drivable))
-        //{
-        //    if (hit.collider.CompareTag("Obstacle")) // 장애물 태그 확인
-        //    {
-        //        // 장애물이 있으면 좌/우로 steerInput을 조절하여 회피
-        //        if (Random.value > 0.5f)
-        //        {
-        //            steerInput = 1f; // 우회전
-        //        }
-        //        else
-        //        {
-        //            steerInput = -1f; // 좌회전
-        //        }
-        //        moveInput = -0.5f; // 감속 또는 후진하여 충돌 회피
-        //    }
+        RaycastHit hit;
+        float rayDistance = 20f; // 레이캐스트 거리
+        if (Physics.Raycast(transform.position, transform.forward, out hit, rayDistance, drivable))
+        {
+            if (hit.collider.CompareTag("Player")) // 플레이어 태그 확인
+            {
+                Debug.Log("플레이어 감지! 회피 로직 실행");
 
-        //    Debug.DrawLine(transform.position, transform.forward * rayDistance, Color.magenta);
+                // 플레이어의 위치를 AI 차량의 로컬 좌표로 변환
+                Vector3 localPlayerPos = transform.InverseTransformPoint(hit.collider.transform.position);
 
-        //}
+                // 플레이어가 AI의 왼쪽에 있는지, 오른쪽에 있는지 판단
+                if (localPlayerPos.x < 0)
+                {
+                    // 플레이어가 왼쪽에 있으면 오른쪽으로 회피
+                    steerInput = 1.0f;
+                }
+                else
+                {
+                    // 플레이어가 오른쪽에 있으면 왼쪽으로 회피
+                    steerInput = -1.0f;
+                }
+
+                // 감속
+                moveInput = 0.5f;
+
+                // 회피 로직이 실행될 때는 웨이포인트 로직을 무시하도록 return; 추가
+                return;
+            }
+
+            Debug.DrawLine(transform.position, transform.forward * rayDistance, Color.magenta);
+
+        }
 
         //Waypoint의 x방향 위치에 따라 핸들 방향 계산
         steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f);
@@ -310,7 +333,6 @@ public class AICarController : MonoBehaviour
         }
     }
 
-
     void ToggleSkidSmokes(bool toggle)
     {
         foreach (var smoke in skidFxs)
@@ -422,18 +444,7 @@ public class AICarController : MonoBehaviour
             carRB.AddForceAtPosition(dragForce, carRB.worldCenterOfMass, ForceMode.Acceleration);
         }
     }
-
-    //스피드 발판 적용 코루틴
-    //public void ApplySpeedPadBoost(float force, float duration)
-    //{
-    //    if (boostCoroutine != null)
-    //    {
-    //        StopCoroutine(boostCoroutine);
-    //    }
-
-    //    boostCoroutine = StartCoroutine(BoostRoutine(force, duration));
-    //}
-
+    
     public void OnTriggerEnter(Collider other)
     {
         if (isBoosted) return;
@@ -498,7 +509,6 @@ public class AICarController : MonoBehaviour
 
     }
 
-
     IEnumerator SpeedUpRoutine()
     {
         isSpeedUp = true;
@@ -527,12 +537,71 @@ public class AICarController : MonoBehaviour
         carRB.drag = originDrag;
     }
 
+    void CheckForStuck()
+    {
+        // 차량이 움직이는지 확인
+        if (Vector3.Distance(transform.position, lastPosition) < 0.1f)
+        {
+            stuckTimer += Time.deltaTime;
+        }
+        else
+        {
+            stuckTimer = 0f;
+        }
+        lastPosition = transform.position;
+
+        // 일정 시간 이상 멈춰 있었다면 복구 루틴을 시작
+        if (stuckTimer >= stuckTimeThreshold && !isRecovering)
+        {
+            StartCoroutine(RecoverRoutine());
+        }
+    }
+
+    // 차량이 뒤집혔는지 확인
+    void CheckForFlip()
+    {
+        // 차의 '위' 방향(transform.up)이 월드 '위' 방향(Vector3.up)과 반대이면 뒤집힌 것으로 간주
+        if (Vector3.Dot(transform.up, Vector3.up) < 0.5f && !isRecovering)
+        {
+            StartCoroutine(RecoverRoutine());
+        }
+    }
+
+    // 복구 루틴 코루틴
+    IEnumerator RecoverRoutine()
+    {
+        isRecovering = true;
+        Debug.Log("AI 차량 복구 시작!");
+
+        // 차량의 움직임을 멈춥니다.
+        carRB.velocity = Vector3.zero;
+        carRB.angularVelocity = Vector3.zero;
+
+        // 차량의 회전을 웨이포인트 방향으로 서서히 돌려줌
+        while (Vector3.Dot(transform.forward, WaypointTest.GetWaypoint(currentWaypointIndex).forward) < 0.99f)
+        {
+            // 다음 웨이포인트를 향하도록 회전
+            Quaternion targetRotation = Quaternion.LookRotation(WaypointTest.GetWaypoint(currentWaypointIndex).position - transform.position);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationResetSpeed * Time.deltaTime);
+            yield return null;
+        }
+
+        // 차량을 웨이포인트 위치 근처로 이동
+        Vector3 recoveryPosition = WaypointTest.GetWaypoint(currentWaypointIndex).position;
+        recoveryPosition.y += 1f; // Y축은 살짝 위로 올려서 지면에 제대로 안착시키기 위함
+        transform.position = recoveryPosition;
+                
+        yield return new WaitForSeconds(recoveryTime);
+
+        isRecovering = false;
+        Debug.Log("AI 차량 복구 완료!");
+    }
     private void OnCollisionEnter(Collision other)
     {
-        //플레이어와 충돌 처리
+        //플레이어와 충돌 순간 반응
         //if (other.collider.CompareTag("Player"))
         //{
-
+        //오디오 등
         //}
     }
 

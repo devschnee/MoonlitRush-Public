@@ -128,6 +128,6 @@ public class MissileProj : MonoBehaviour
     {
       print("explosion fx is null");
     }
-    Destroy(gameObject);
+    //Destroy(gameObject);
   }
 }

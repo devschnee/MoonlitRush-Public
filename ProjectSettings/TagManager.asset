@@ -6,13 +6,17 @@ TagManager:
   tags:
   - JumpRamp
   - SpeedUp
-  - AICom
   - Boost
   - Barrel
   - Goal
   - ItemBooster
   - ItemMissile
   - ItemShield
+  - CheckPoint
+  - BoostPad
+  - AIPlayer
+  - AICom
+  - ItemBox
   layers:
   - Default
   - TransparentFX

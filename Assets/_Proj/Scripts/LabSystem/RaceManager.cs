@@ -16,7 +16,8 @@ public class RaceManager : MonoBehaviour
     {
         if (Instance == null)
         {
-        Instance = this;
+            Instance = this;
+           
         }
         else
         {
@@ -55,6 +56,7 @@ public class RaceManager : MonoBehaviour
     void UpdateRanking()
     {
         racers = racers
+           // .Where(r => r != null) // null인 요소 제외
             //1차 정렬(내림차순): 현재 완료한 바퀴 수
             .OrderByDescending(r => r.lapCounter.currentLap)
             //2차 정렬(내림차순): 통과한 checkpoint 수
@@ -73,4 +75,6 @@ public class RaceManager : MonoBehaviour
             racers[i].currentRank = i + 1;
         }
     }
+
+   
 }

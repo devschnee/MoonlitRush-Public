@@ -7,7 +7,7 @@ public class AIItemCollector : MonoBehaviour
     public ItemData defaultBooster;
     public ItemData defaultShield;
     public ItemData defaultMissile;
-
+    
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("ItemBooster") && !other.CompareTag("ItemShield") && !other.CompareTag("ItemMissile"))

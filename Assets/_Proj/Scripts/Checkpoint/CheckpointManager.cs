@@ -32,6 +32,6 @@ public class ChekcpointManager : MonoBehaviour
             }
         }
 
-        firstCheckpoint = allCheckPoints[0]; 
+       // firstCheckpoint = allCheckPoints[0]; 
     }
 }

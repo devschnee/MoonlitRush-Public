@@ -31,7 +31,7 @@ public class LapCounter : MonoBehaviour
             float currentLapTime = Time.time - lapStartTime;
             int minutes = Mathf.FloorToInt(currentLapTime / 60);  //Ка
             float seconds = currentLapTime % 60; //УЪ
-            timeText.text = $"Lap Time: {minutes:00}:{seconds:00.00}";
+            timeText.text = $"{minutes:00}:{seconds:00.00}";
         }
     }
 
