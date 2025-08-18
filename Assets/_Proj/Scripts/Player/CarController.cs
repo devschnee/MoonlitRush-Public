@@ -574,7 +574,7 @@ public class CarController : MonoBehaviour
     Vector3 lv = transform.InverseTransformDirection(rb.velocity);
     if (boostApplyer != null)
       boostApplyer.ApplyBoost(3, 1.1f, 2f);
-    lv.z = Mathf.Max(lv.z, 37f); // 배럴롤에는 좀 더 강하게
+    lv.z = Mathf.Max(lv.z, 30f);
     rb.velocity = transform.TransformDirection(lv);
 
     yield return new WaitForSeconds(0.4f);
