@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class ExitStartButtonUI : MonoBehaviour
 {
     public GameObject exit;
+    public CarSelectionUI carSelectionUI;
 
     private void Awake()
     {
@@ -37,8 +38,11 @@ public class ExitStartButtonUI : MonoBehaviour
         exit?.SetActive(false);
     }
 
+    //로비용
     public void GameStart()
     {
+        // 선택 정보 저장
+        carSelectionUI.SaveSelection();
         SceneManager.LoadScene("SampleScene");
     }
 

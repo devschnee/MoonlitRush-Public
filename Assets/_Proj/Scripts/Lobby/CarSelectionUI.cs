@@ -13,7 +13,7 @@ public class CarSelectionUI : MonoBehaviour
         for (int i = 0; i < carPrefabs.Length; i++)
         {
             carPrefabs[i].SetActive(i == selectedCarIndex);
-        }
+        }       
     }
 
     public void SelectNextCar() //다음 차량으로 변경
@@ -22,7 +22,7 @@ public class CarSelectionUI : MonoBehaviour
         if(selectedCarIndex >= carPrefabs.Length)
         {
             selectedCarIndex = 0;
-        }
+        }        
         UpdateCarDisplay();
     }
 
@@ -32,7 +32,7 @@ public class CarSelectionUI : MonoBehaviour
         if( selectedCarIndex < 0)
         {
             selectedCarIndex = carPrefabs.Length - 1;
-        }
+        }      
         UpdateCarDisplay();
     }
 
@@ -44,5 +44,13 @@ public class CarSelectionUI : MonoBehaviour
         }
         //선택된 차량만 활성화
         carPrefabs[selectedCarIndex].SetActive(true);
+    }
+
+
+    // 차량 선택 정보 저장만
+    public void SaveSelection()
+    {
+        PlayerPrefs.SetInt("SelectedCarIndex", selectedCarIndex);
+        PlayerPrefs.SetInt("CarCount", carPrefabs.Length); // 배열 길이 동기화
     }
 }
