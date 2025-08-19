@@ -46,7 +46,7 @@ public class CarController : MonoBehaviour
 
   // 부스트 효과
   [SerializeField] private float extraDecayPerSec = 10f; // 초당 얼마나 줄일지(m/s)
-  private float extraForward = 0f; // 현재 오버레이 전진 속도(m/s)
+  private float extraFwd = 0f; // 현재 오버레이 전진 속도(m/s)
 
   #region Gear Settings
   [Header("Gear")]
@@ -147,10 +147,10 @@ public class CarController : MonoBehaviour
 
   void FixedUpdate()
   {
-    if (Time.frameCount % 30 == 0)
+    if (Time.frameCount % 60 == 0)
     {
-      var lv = transform.InverseTransformDirection(rb.velocity);
-      Debug.Log($"lv.z={lv.z:F2}, cap={maxSpeed}");
+      Debug.Log($"[{name}] lv.z={currCarLocalVel.z:F2}, gear={currGear}, " +
+                $"Accel={acceleration}, RL={tires[2].name}, RR={tires[3].name}");
     }
     Suspension();
     GroundCheck();
@@ -172,16 +172,7 @@ public class CarController : MonoBehaviour
     float slip = CalcLateralSpeed();
     bool shouldSkid = isGrounded && (slip > skidStartSlip) && Mathf.Abs(currCarLocalVel.z) > 2f;
     UpdatedSkidSound(shouldSkid, slip);
-
-    if (extraForward > 0f)
-    {
-      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-      lv.z += extraForward; // 캡 넘어보이게 오버레이
-      rb.velocity = transform.TransformDirection(lv);
-
-      // 감쇠(자연스럽게 다시 캡으로 복귀)
-      extraForward = Mathf.Max(0f, extraForward - extraDecayPerSec * Time.fixedDeltaTime);
-    }
+    EndBooster();
   }
 
 
@@ -553,7 +544,7 @@ public class CarController : MonoBehaviour
     float gearTopSpeed = maxSpeed * currTop;
 
     Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-    if (lv.z > gearTopSpeed)
+    if (lv.z > gearTopSpeed && extraFwd <= 0f)
     {
       lv.z = gearTopSpeed;
       rb.velocity = transform.TransformDirection(lv);
@@ -569,6 +560,28 @@ public class CarController : MonoBehaviour
 
     if (topGear)
       currGear = maxGears; // 잠시 동안 기어 5단 고정
+  }
+
+  void EndBooster()
+  {
+    if(extraFwd > 0f)
+    {
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      lv.z += extraFwd;
+      rb.velocity = transform.TransformDirection(lv);
+
+      // 자연스럽게 감속(maxSpeed 캡)
+      extraFwd = Mathf.Max(0f, extraFwd - extraDecayPerSec * Time.fixedDeltaTime);
+    }
+    else
+    {
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      if(lv.z > maxSpeed)
+      {
+        lv.z = Mathf.Max(maxSpeed, lv.z - Time.fixedDeltaTime * deceleration);
+        rb.velocity = transform.TransformDirection(lv);
+      }
+    }
   }
   #endregion
 
@@ -645,6 +658,7 @@ public class CarController : MonoBehaviour
         {
           boostApplyer.ApplyBoost(2f, 1.1f, 1.5f); // 시간, 크기, 속도
         };
+        rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration); // 슬로프 탈 때 속도 감속하는 것을 강제로 끌어올림
         lv.z = Mathf.Max(lv.z, 25f); // 부스터 목표 속도 (m/s)
         rb.velocity = transform.TransformDirection(lv);
         ApplyTransientOverdrive(add: 1.15f, minFwdIfLower: 20f);
@@ -665,7 +679,9 @@ public class CarController : MonoBehaviour
           boostApplyer.ApplyBoost(2f, 1.1f, 2f);
           lv.z = (Mathf.Max(lv.z, 20f));
           rb.velocity = (transform.TransformDirection(lv));
-          ApplyTransientOverdrive(add: 1.05f, minFwdIfLower: 10f);
+          float targetBoostSpeed = 26f; // pad 밟으면 최소 보장 속도
+          float boostDuration = 1.5f; // 몇 초 동안 유지할지
+          StartCoroutine(BoostPadCoroutine(targetBoostSpeed, boostDuration));
         }
       }
     }
@@ -682,7 +698,21 @@ public class CarController : MonoBehaviour
     }
 
     // 오버레이 속도: 기존 것보다 더 큰 값으로 갱신(스택 대신 최댓값 권장). add : 추가로 붙여줄 속도
-    extraForward = Mathf.Max(extraForward, add);
+    extraFwd = Mathf.Max(extraFwd, add);
+  }
+
+  IEnumerator BoostPadCoroutine(float targetSpeed, float duration)
+  {
+    float timer = duration;
+    while (timer > 0f)
+    {
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      rb.AddForce(transform.forward * acceleration * 20f, ForceMode.Acceleration);
+      rb.velocity = transform.TransformDirection(lv);
+
+      timer -= Time.fixedDeltaTime;
+      yield return new WaitForFixedUpdate();
+    }
   }
 
   #endregion
@@ -693,6 +723,7 @@ public class CarController : MonoBehaviour
     Vector3 lv = transform.InverseTransformDirection(rb.velocity);
     if (boostApplyer != null)
       boostApplyer.ApplyBoost(3, 1.1f, 2f);
+    rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration);
     lv.z = Mathf.Max(lv.z, 30f);
     rb.velocity = transform.TransformDirection(lv);
 
