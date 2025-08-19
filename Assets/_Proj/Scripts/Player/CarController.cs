@@ -44,6 +44,10 @@ public class CarController : MonoBehaviour
   [SerializeField] private AnimationCurve turningCurve;
   [SerializeField] private float dragCoefficient;
 
+  // 부스트 효과
+  [SerializeField] private float extraDecayPerSec = 10f; // 초당 얼마나 줄일지(m/s)
+  private float extraForward = 0f; // 현재 오버레이 전진 속도(m/s)
+
   #region Gear Settings
   [Header("Gear")]
   [SerializeField, Range(1, 5)] private int maxGears = 5;
@@ -56,6 +60,10 @@ public class CarController : MonoBehaviour
   private bool isHoldingTop = false; // 기어 최고 속도에서 속도 유지했는지
   private float holdTimer = 0f;
   private bool didDropBeforeShift = false; // 변속 전 속도 떨어뜨렸는지
+  [SerializeField] private float downshift = 0.9f; // 이전 기어 최고속도의 905 밑으로 떨어지면 다운시프트
+  [SerializeField] private float gearBypass = 0.7f; // 부스트 시 잠깐 기어로직 중단
+  private float gearBypassEndTime = 0f;
+  private bool gearBypassed => Time.time < gearBypassEndTime;
   #endregion
 
   #region Drfit Settings
@@ -75,7 +83,7 @@ public class CarController : MonoBehaviour
 
   #region Airbourne
   [Header("Airbourne Settings")]
-  [SerializeField, Range(0, 1)] private float airGravity = 0.4f;
+  [SerializeField, Range(0, 1)] private float airGravity = 0.6f;
   [SerializeField] private float airGravityDuration = 0.3f; // 결국 이것이 airTimer
   [SerializeField] private float lvTorqueStrength = 8f;
   [SerializeField] private float lvTorqueDamping = 0.6f;
@@ -159,6 +167,16 @@ public class CarController : MonoBehaviour
     float slip = CalcLateralSpeed();
     bool shouldSkid = isGrounded && (slip > skidStartSlip) && Mathf.Abs(currCarLocalVel.z) > 2f;
     UpdatedSkidSound(shouldSkid, slip);
+
+    if (extraForward > 0f)
+    {
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      lv.z += extraForward; // 캡 넘어보이게 오버레이
+      rb.velocity = transform.TransformDirection(lv);
+
+      // 감쇠(자연스럽게 다시 캡으로 복귀)
+      extraForward = Mathf.Max(0f, extraForward - extraDecayPerSec * Time.fixedDeltaTime);
+    }
   }
 
 
@@ -460,6 +478,9 @@ public class CarController : MonoBehaviour
       didDropBeforeShift = false;
       return;
     }
+
+    if (gearBypassed) return;
+
     int max = Mathf.Clamp(maxGears, 1, 5); // 5단 기어
     if (gearsPercents.Length != max) Array.Resize(ref gearsPercents, max);
     gearsPercents[max - 1] = 1f;
@@ -476,6 +497,15 @@ public class CarController : MonoBehaviour
         isHoldingTop = true;
         holdTimer = holdTopSpeed;
         didDropBeforeShift = false;
+      }
+      else if(currGear > 1)
+      {
+        // 이전 기어 상한에서 downshift값만큼 떨어지면 내림
+        float prevTop = gearsPercents[Mathf.Clamp(currGear - 2, 0, max - 1)];
+        if(speedRatio < prevTop * downshift)
+        {
+          currGear--;
+        }
       }
     }
     else
@@ -513,6 +543,9 @@ public class CarController : MonoBehaviour
 
   void ApplyGearHoldAndCap()
   {
+    if (gearBypassed && currGear < maxGears)
+      currGear = maxGears;
+
     int max = Mathf.Clamp(maxGears, 1, 5);
     float currTop = gearsPercents[Mathf.Clamp(currGear - 1, 0, max - 1)];
     float gearTopSpeed = maxSpeed * currTop;
@@ -523,6 +556,17 @@ public class CarController : MonoBehaviour
       lv.z = gearTopSpeed;
       rb.velocity = transform.TransformDirection(lv);
     }
+  }
+
+  public void EnterGearBypass(float duration, bool topGear = true)
+  {
+    gearBypassEndTime = Time.time + Mathf.Max(0.05f, duration);
+    isHoldingTop = false;
+    holdTimer = 0f;
+    didDropBeforeShift = true;
+
+    if (topGear)
+      currGear = maxGears; // 잠시 동안 기어 5단 고정
   }
   #endregion
 
@@ -580,13 +624,15 @@ public class CarController : MonoBehaviour
 
     rb.drag = originDrag;
   }
+
   #region Trigger
   void OnTriggerEnter(Collider other)
   {
     Vector3 lv = transform.InverseTransformDirection(rb.velocity);
     if (lv.z <= 0.01f)
       return;
-    currGear = 5;
+
+    EnterGearBypass(gearBypass, true);
     
     if (currCarLocalVel.z > 0.1f)
     {
@@ -599,6 +645,7 @@ public class CarController : MonoBehaviour
         };
         lv.z = Mathf.Max(lv.z, 25f); // 부스터 목표 속도 (m/s)
         rb.velocity = transform.TransformDirection(lv);
+        ApplyTransientOverdrive(add: 1.1f, minFwdIfLower: 20f);
       }
 
       if (other.CompareTag("Barrel"))
@@ -616,10 +663,26 @@ public class CarController : MonoBehaviour
           boostApplyer.ApplyBoost(2f, 1.1f, 2f);
           lv.z = (Mathf.Max(lv.z, 20f));
           rb.velocity = (transform.TransformDirection(lv));
+          ApplyTransientOverdrive(add: 1.05f, minFwdIfLower: 10f);
         }
       }
     }
   }
+  // 부스트 효과
+  public void ApplyTransientOverdrive(float add, float minFwdIfLower = 0f)
+  {
+    // 현재 전진 속도가 너무 낮으면 최소 보장(minFwdIfLower)
+    if (minFwdIfLower > 0f)
+    {
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      lv.z = Mathf.Max(lv.z, minFwdIfLower);
+      rb.velocity = transform.TransformDirection(lv);
+    }
+
+    // 오버레이 속도: 기존 것보다 더 큰 값으로 갱신(스택 대신 최댓값 권장). add : 추가로 붙여줄 속도
+    extraForward = Mathf.Max(extraForward, add);
+  }
+
   #endregion
 
   #region Barrel Roll Coroutine
@@ -645,10 +708,11 @@ public class CarController : MonoBehaviour
       timer -= Time.deltaTime;
       yield return null;
     }
-
+    ApplyTransientOverdrive(add: 1.3f, minFwdIfLower: 20.5f);
     isBarrelRolling = false;
 
     moveInput = 1f;
   }
   #endregion
+
 }
