@@ -147,6 +147,11 @@ public class CarController : MonoBehaviour
 
   void FixedUpdate()
   {
+    if (Time.frameCount % 30 == 0)
+    {
+      var lv = transform.InverseTransformDirection(rb.velocity);
+      Debug.Log($"lv.z={lv.z:F2}, cap={maxSpeed}");
+    }
     Suspension();
     GroundCheck();
 
@@ -211,16 +216,11 @@ public class CarController : MonoBehaviour
     float accelPower = (moveInput >= 0f) ? acceleration : reverseAccel;
 
     Vector3 force = accelPower * Mathf.Abs(moveInput) * Mathf.Sign(moveInput) * transform.forward;
-    // 후륜 구동 : 뒷바퀴 1 (index 2)
-    if (tires.Length > 2)
-    {
-      rb.AddForceAtPosition(acceleration * moveInput * transform.forward, tires[2].transform.position, ForceMode.Acceleration);
-    }
 
-    // 뒷바퀴 2 (index 3)
-    if (tires.Length > 3)
+    // 후륜 구동 : 뒷바퀴 idx 2부터
+    for(int i = 2; i < tires.Length; i++)
     {
-      rb.AddForceAtPosition(acceleration * moveInput * transform.forward, tires[3].transform.position, ForceMode.Acceleration);
+      rb.AddForceAtPosition(acceleration * moveInput * transform.forward, tires[i].transform.position, ForceMode.Acceleration);
     }
   }
 
@@ -716,5 +716,4 @@ public class CarController : MonoBehaviour
     moveInput = 1f;
   }
   #endregion
-
 }
