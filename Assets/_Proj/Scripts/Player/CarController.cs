@@ -658,10 +658,10 @@ public class CarController : MonoBehaviour
         {
           boostApplyer.ApplyBoost(2f, 1.1f, 1.5f); // 시간, 크기, 속도
         };
-        rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration); // 슬로프 탈 때 속도 감속하는 것을 강제로 끌어올림
-        lv.z = Mathf.Max(lv.z, 25f); // 부스터 목표 속도 (m/s)
-        rb.velocity = transform.TransformDirection(lv);
-        ApplyTransientOverdrive(add: 1.15f, minFwdIfLower: 20f);
+        rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration); // 슬로프 탈 때 속도 감속 강제 보정
+
+        float targetBoostSpeed = maxSpeed * 1.25f; // 내 차 최고속도의 125%
+        ApplyTransientOverdrive(add: maxSpeed * 0.12f, minFwdIfLower: maxSpeed * 0.5f);
       }
 
       if (other.CompareTag("Barrel"))
@@ -677,15 +677,18 @@ public class CarController : MonoBehaviour
         if(boostApplyer != null)
         {
           boostApplyer.ApplyBoost(2f, 1.1f, 2f);
-          lv.z = (Mathf.Max(lv.z, 20f));
-          rb.velocity = (transform.TransformDirection(lv));
-          float targetBoostSpeed = 26f; // pad 밟으면 최소 보장 속도
-          float boostDuration = 1.5f; // 몇 초 동안 유지할지
-          StartCoroutine(BoostPadCoroutine(targetBoostSpeed, boostDuration));
+
+          rb.AddForce(transform.forward * acceleration * 50f, ForceMode.Acceleration); // 물리적으로 앞으로 밀기
+
+          float targetBoostSpeed = maxSpeed * 1.5f; // pad 밟으면 최소 보장 속도
+          StartCoroutine(BoostPadCoroutine(targetBoostSpeed, 1.5f));
         }
       }
     }
   }
+  #endregion
+
+  #region Booster Effects
   // 부스트 효과
   public void ApplyTransientOverdrive(float add, float minFwdIfLower = 0f)
   {
@@ -707,7 +710,7 @@ public class CarController : MonoBehaviour
     while (timer > 0f)
     {
       Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-      rb.AddForce(transform.forward * acceleration * 20f, ForceMode.Acceleration);
+      lv.z = Mathf.Max(lv.z, targetSpeed);
       rb.velocity = transform.TransformDirection(lv);
 
       timer -= Time.fixedDeltaTime;
@@ -727,6 +730,7 @@ public class CarController : MonoBehaviour
     lv.z = Mathf.Max(lv.z, 30f);
     rb.velocity = transform.TransformDirection(lv);
 
+    ApplyTransientOverdrive(add: maxSpeed * 0.15f, minFwdIfLower: maxSpeed * 0.55f);
     yield return new WaitForSeconds(0.4f);
     yield return new WaitUntil(() => !isGrounded);
 
@@ -741,7 +745,6 @@ public class CarController : MonoBehaviour
       timer -= Time.deltaTime;
       yield return null;
     }
-    ApplyTransientOverdrive(add: 1.3f, minFwdIfLower: 20.5f);
     isBarrelRolling = false;
 
     moveInput = 1f;
