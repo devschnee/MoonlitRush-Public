@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System;
-using UnityEngine.Events;
 
 public class CarSpawn : MonoBehaviour
 {
@@ -29,7 +27,6 @@ public class CarSpawn : MonoBehaviour
 
       // Intro Countdown 스크립트 연결 시 삭제. 해당 스크립트에서 Time.timeScale = 1f; 줘야 함.
       //Time.timeScale = 1f;
-      // 현재 CountdownTest.cs로 테스트 중
 
       go.transform.parent = null;
       lastSpawned = go;
