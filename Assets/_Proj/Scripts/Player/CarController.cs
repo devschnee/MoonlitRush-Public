@@ -6,8 +6,10 @@ using UnityEngine;
 public class CarController : MonoBehaviour
 {
   public float currSpeed;
+
   #region References
   [Header("References")]
+  public CarStats stats;
   [SerializeField] private Rigidbody rb;
   [SerializeField] private Transform[] rayPoints;
   [SerializeField] private LayerMask drivable;
@@ -35,14 +37,16 @@ public class CarController : MonoBehaviour
   [Header("Reverse")]
   [SerializeField] private float reverseMaxSpeed = 5f;
   [SerializeField] private float reverseAccel = 1f;
+  private float brakePow = 3f;
 
   [Header("Car Settings")]
   public float acceleration = 25f;
-  [SerializeField] private float maxSpeed = 100f;
-  [SerializeField] private float deceleration = 10f;
-  [SerializeField] private float steerForce = 15f;
-  [SerializeField] private AnimationCurve turningCurve;
-  [SerializeField] private float dragCoefficient;
+  private float maxSpeed = 100f;
+  private float deceleration = 10f;
+  private float steerForce = 15f;
+  private AnimationCurve turningCurve;
+  private AnimationCurve accelCurve;
+  private float dragCoefficient = 100f;
 
   // 부스트 효과
   [SerializeField] private float extraDecayPerSec = 10f; // 초당 얼마나 줄일지(m/s)
@@ -53,7 +57,7 @@ public class CarController : MonoBehaviour
   [SerializeField, Range(1, 5)] private int maxGears = 5;
   [SerializeField] private float[] gearsPercents = new float[] { 0.18f, 0.36f, 0.56f, 0.78f, 1 };
   //[SerializeField] private float[] gearAccelMultipliers = new float[] { 1.8f, 1.5f, 1.25f, 1f, 0.8f };
-  [SerializeField] private float holdTopSpeed = 1f; // 자동 변속 전 기어 별 최고 속도에서 유지하는 시간(s)
+  private float holdTopSpeed = 1f; // 자동 변속 전 기어 별 최고 속도에서 유지하는 시간(s)
   [SerializeField, Min(0)] private float dropBeforeShiftAmount = 1f; // 변속 전 기어 별 최고 속도에서 잠깐 속도 줄이는 속도(m/s)[실제 기어 변속 하듯이 <- 수동 변속기 클러치 떼는 순간 속도 살짝 줄어드는 느낌]
 
   private int currGear = 1; // 현재 기어 단
@@ -83,8 +87,8 @@ public class CarController : MonoBehaviour
 
   #region Airbourne
   [Header("Airbourne Settings")]
-  [SerializeField, Range(0, 1)] private float airGravity = 0.6f;
-  [SerializeField] private float airGravityDuration = 0.3f; // 결국 이것이 airTimer
+  private float airGravity = 0.6f;
+  private float airGravityDuration = 0.3f; // 결국 이것이 airTimer
   [SerializeField] private float lvTorqueStrength = 8f;
   [SerializeField] private float lvTorqueDamping = 0.6f;
   [SerializeField] private float maxLvTorque = 200f;
@@ -100,8 +104,8 @@ public class CarController : MonoBehaviour
   #endregion
 
   [Header("Weight Feel (Minimal)")]
-  [SerializeField] private float baseDownforce = 300f;
-  [SerializeField] private float downforcePerMS = 0.6f; // 속도(m/s)당 추가 눌림
+  private float baseDownforce = 300f;
+  private float downforcePerMS = 0.6f; // 속도(m/s)당 추가 눌림
   [SerializeField] private float maxDownforce = 1000f;  // 과접지 방지 캡
 
   [Header("Visuals")]
@@ -136,6 +140,7 @@ public class CarController : MonoBehaviour
   void Awake()
   {
     rb = GetComponent<Rigidbody>();
+    ApplyStats(stats);
   }
 
   void Update()
@@ -175,6 +180,31 @@ public class CarController : MonoBehaviour
     EndBooster();
   }
 
+  #region Stats
+  void ApplyStats(CarStats s)
+  {
+    rb.mass = s.mass;
+    rb.angularDrag = s.angularDrag;
+
+    acceleration = s.acceleration;
+    maxSpeed = s.maxSpeed;
+    deceleration = s.deceleration;
+    steerForce = s.steerForce;
+    turningCurve = s.turningCurve;
+
+    holdTopSpeed = s.holdTopSpeed;
+
+    baseDownforce = s.baseDownforce;
+    downforcePerMS = s.downforcePerMS;
+
+    airGravity = s.airGravity;
+    airGravityDuration = s.airGravityDuration;
+
+    accelCurve = s.accelCurve;
+
+    brakePow = s.brakePow;
+  }
+  #endregion
 
   #region Movement
   void Movement()
@@ -206,7 +236,9 @@ public class CarController : MonoBehaviour
   {
     float accelPower = (moveInput >= 0f) ? acceleration : reverseAccel;
 
-    Vector3 force = accelPower * Mathf.Abs(moveInput) * Mathf.Sign(moveInput) * transform.forward;
+    float speedRatio = Mathf.Clamp01(MathF.Abs(currCarLocalVel.z) / maxSpeed);
+    float curveMulti = accelCurve.Evaluate(speedRatio);
+    Vector3 force = accelPower * Mathf.Abs(moveInput) * Mathf.Sign(moveInput) * curveMulti * transform.forward;
 
     // 후륜 구동 : 뒷바퀴 idx 2부터
     for(int i = 2; i < tires.Length; i++)
@@ -219,7 +251,7 @@ public class CarController : MonoBehaviour
   {
     Vector3 lv = transform.InverseTransformDirection(rb.velocity);
     float dir = Mathf.Sign(lv.z);
-    Vector3 brake = -dir * deceleration * transform.forward;
+    Vector3 brake = -dir * deceleration * brakePow * transform.forward;
     rb.AddForceAtPosition(brake, accelPoint.position, ForceMode.Acceleration);
   }
 
