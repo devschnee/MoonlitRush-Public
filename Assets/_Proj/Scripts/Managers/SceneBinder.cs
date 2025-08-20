@@ -30,6 +30,7 @@ public class SceneBinder : MonoBehaviour
   public TextMeshProUGUI lapTimeText;       
   public CheckpointManager checkpoints;     
   public MinimapIcon pMinimapIcon;
+  public TextMeshProUGUI lapCntText;
 
   IEnumerator Start()
   {
@@ -71,13 +72,16 @@ public class SceneBinder : MonoBehaviour
     if (finalCnt && carCtrl) finalCnt.playerCar = carCtrl;
     if (startCnt && carCtrl) startCnt.playerCar = carCtrl;
     var lapCounter = car.GetComponent<LapCounter>() ?? car.GetComponentInChildren<LapCounter>();
+    if (!lapCntText)
+      lapCntText = GameObject.Find("Lap Text")?.GetComponent<TextMeshProUGUI>();
     if (lapCounter)
     {
+      if (lapCntText) lapCounter.lapText = lapCntText;
       if (lapTimeText) lapCounter.timeText = lapTimeText;
       if (checkpoints) lapCounter.checkpointManager = checkpoints;
     }
 
-   
+
     if (pMinimapIcon)
       pMinimapIcon.target = car.transform;
 

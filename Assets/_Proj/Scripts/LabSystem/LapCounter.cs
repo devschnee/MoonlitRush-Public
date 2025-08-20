@@ -8,7 +8,7 @@ public class LapCounter : MonoBehaviour
   public TextMeshProUGUI timeText;
   private float lapStartTime;
 
-  public int currentLap = 1;
+  public int currentLap = 0;
   //public int nextCheckpointIndex = 0;
   private bool raceFinished = false;
   public Checkpoint nextCheckpoint;  // 다음 체크포인트의 오브젝트를 직접 참조
@@ -104,7 +104,7 @@ public class LapCounter : MonoBehaviour
       }
       if (lapText != null)
       {
-        lapText.text = $"{currentLap} / {RaceManager.Instance.totalLaps} Lap";
+        lapText.text = $"{currentLap + 1} / {RaceManager.Instance.totalLaps} Lap";
       }
 
 
