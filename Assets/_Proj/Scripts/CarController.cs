@@ -1,4 +1,4 @@
-ï»¿using System;
+using System;
 using UnityEngine;
 
 public class CarController : MonoBehaviour
@@ -46,13 +46,13 @@ public class CarController : MonoBehaviour
   [SerializeField, Range(1, 5)] private int maxGears = 5;
   [SerializeField] private float[] gearsPercents = new float[] { 0.18f, 0.36f, 0.56f, 0.78f, 1 };
   //[SerializeField] private float[] gearAccelMultipliers = new float[] { 1.8f, 1.5f, 1.25f, 1f, 0.8f };
-  [SerializeField] private float holdTopSpeed = 1f; // ìë™ ë³€ì† ì „ ê¸°ì–´ ë³„ ìµœê³  ì†ë„ì—ì„œ ìœ ì§€í•˜ëŠ” ì‹œê°„(s)
-  [SerializeField, Range(0.01f, 0.2f)] private float dropBeforeShiftPercent = 0.1f; // ë³€ì† ì „ ê¸°ì–´ ë³„ ìµœê³  ì†ë„ì—ì„œ ì ê¹ ì†ë„ ì¤„ì´ëŠ” ë¹„ìœ¨(%)[ì‹¤ì œ ê¸°ì–´ ë³€ì† í•˜ë“¯ì´ <- ìˆ˜ë™ ë³€ì†ê¸° í´ëŸ¬ì¹˜ ë–¼ëŠ” ìˆœê°„ ì†ë„ ì‚´ì§ ì¤„ì–´ë“œëŠ” ëŠë‚Œ]
+  [SerializeField] private float holdTopSpeed = 1f; // ÀÚµ¿ º¯¼Ó Àü ±â¾î º° ÃÖ°í ¼Óµµ¿¡¼­ À¯ÁöÇÏ´Â ½Ã°£(s)
+  [SerializeField, Range(0.01f, 0.2f)] private float dropBeforeShiftPercent = 0.1f; // º¯¼Ó Àü ±â¾î º° ÃÖ°í ¼Óµµ¿¡¼­ Àá±ñ ¼Óµµ ÁÙÀÌ´Â ºñÀ²(%)[½ÇÁ¦ ±â¾î º¯¼Ó ÇÏµíÀÌ <- ¼öµ¿ º¯¼Ó±â Å¬·¯Ä¡ ¶¼´Â ¼ø°£ ¼Óµµ »ìÂ¦ ÁÙ¾îµå´Â ´À³¦]
 
-  private int currGear = 1; // í˜„ì¬ ê¸°ì–´ ë‹¨
-  private bool isHoldingTop = false; // ê¸°ì–´ ìµœê³  ì†ë„ì—ì„œ ì†ë„ ìœ ì§€í–ˆëŠ”ì§€
+  private int currGear = 1; // ÇöÀç ±â¾î ´Ü
+  private bool isHoldingTop = false; // ±â¾î ÃÖ°í ¼Óµµ¿¡¼­ ¼Óµµ À¯ÁöÇß´ÂÁö
   private float holdTimer = 0f;
-  private bool didDropBeforeShift = false; // ë³€ì† ì „ ì†ë„ ë–¨ì–´ëœ¨ë ¸ëŠ”ì§€
+  private bool didDropBeforeShift = false; // º¯¼Ó Àü ¼Óµµ ¶³¾î¶ß·È´ÂÁö
   #endregion
 
   [Header("Drift")]
@@ -87,8 +87,8 @@ public class CarController : MonoBehaviour
 
   [Header("Weight Feel (Minimal)")]
   [SerializeField] private float baseDownforce = 300f;
-  [SerializeField] private float downforcePerMS = 0.6f; // ì†ë„(m/s)ë‹¹ ì¶”ê°€ ëˆŒë¦¼
-  [SerializeField] private float maxDownforce = 1000f;  // ê³¼ì ‘ì§€ ë°©ì§€ ìº¡
+  [SerializeField] private float downforcePerMS = 0.6f; // ¼Óµµ(m/s)´ç Ãß°¡ ´­¸²
+  [SerializeField] private float maxDownforce = 1000f;  // °úÁ¢Áö ¹æÁö Ä¸
 
   [Header("Visuals")]
   [SerializeField] private float tireRotSpeed = 3000f;
@@ -101,6 +101,8 @@ public class CarController : MonoBehaviour
   [SerializeField]
   [Range(1, 5)] private float maxPitch = 5f;
 
+
+    public bool moveStart = false;
   void Awake()
   {
     rb = GetComponent<Rigidbody>();
@@ -171,13 +173,13 @@ public class CarController : MonoBehaviour
     float accelPower = (moveInput >= 0f) ? acceleration : reverseAccel;
 
     Vector3 force = accelPower * Mathf.Abs(moveInput) * Mathf.Sign(moveInput) * transform.forward;
-    // í›„ë¥œ êµ¬ë™ : ë’·ë°”í€´ 1 (index 2)
+    // ÈÄ·û ±¸µ¿ : µŞ¹ÙÄû 1 (index 2)
     if (tires.Length > 2)
     {
       rb.AddForceAtPosition(acceleration * moveInput * transform.forward, tires[2].transform.position, ForceMode.Acceleration);
     }
 
-    // ë’·ë°”í€´ 2 (index 3)
+    // µŞ¹ÙÄû 2 (index 3)
     if (tires.Length > 3)
     {
       rb.AddForceAtPosition(acceleration * moveInput * transform.forward, tires[3].transform.position, ForceMode.Acceleration);
@@ -224,7 +226,7 @@ public class CarController : MonoBehaviour
   }
   void ApplyDownforce()
   {
-    if (!isGrounded) return; // ê³µì¤‘ì—ì„  X
+    if (!isGrounded) return; // °øÁß¿¡¼± X
     float v = rb.velocity.magnitude;  // m/s
     float down = Mathf.Min(baseDownforce + downforcePerMS * v, maxDownforce);
     rb.AddForce(-transform.up * down, ForceMode.Force);
@@ -389,16 +391,16 @@ public class CarController : MonoBehaviour
   #region Gear Shift
   void GearLogic()
   {
-    // í›„ì§„í•˜ê±°ë‚˜ ì •ì§€í• ë•Œ ê¸°ì–´ ë³€ì† ì¤‘ì§€
+    // ÈÄÁøÇÏ°Å³ª Á¤ÁöÇÒ¶§ ±â¾î º¯¼Ó ÁßÁö
     if (currCarLocalVel.z <= 0)
     {
-      currGear = 1; // ê¸°ì–´ëŠ” í•­ìƒ 1ë‹¨ìœ¼ë¡œ ìœ ì§€
+      currGear = 1; // ±â¾î´Â Ç×»ó 1´ÜÀ¸·Î À¯Áö
       isHoldingTop = false;
       holdTimer = 0f;
       didDropBeforeShift = false;
       return;
     }
-    int max = Mathf.Clamp(maxGears, 1, 5); // 5ë‹¨ ê¸°ì–´
+    int max = Mathf.Clamp(maxGears, 1, 5); // 5´Ü ±â¾î
     if (gearsPercents.Length != max) Array.Resize(ref gearsPercents, max);
     gearsPercents[max - 1] = 1f;
 
@@ -514,29 +516,29 @@ public class CarController : MonoBehaviour
     {
       if (other.CompareTag("SpeedUp"))
       {
-        Debug.Log($"ê°ì§€ : {other.tag}");
+        Debug.Log($"°¨Áö : {other.tag}");
         if (boostApplyer != null)
         {
-          boostApplyer.ApplyBoost(2f, 1.1f, 1.5f); // ì‹œê°„, í¬ê¸°, ì†ë„
+          boostApplyer.ApplyBoost(2f, 1.1f, 1.5f); // ½Ã°£, Å©±â, ¼Óµµ
         };
-        lv.z = Mathf.Max(lv.z, 28f); // ë¶€ìŠ¤í„° ëª©í‘œ ì†ë„ (m/s)
+        lv.z = Mathf.Max(lv.z, 28f); // ºÎ½ºÅÍ ¸ñÇ¥ ¼Óµµ (m/s)
         rb.velocity = transform.TransformDirection(lv);
       }
 
       if (other.CompareTag("Barrel"))
       {
-        Debug.Log($"ê°ì§€ : {other.tag}");
+        Debug.Log($"°¨Áö : {other.tag}");
         if (boostApplyer != null)
         {
           boostApplyer.ApplyBoost(3f, 1.1f, 2f);
         }
-        lv.z = Mathf.Max(lv.z, 32f); // ë°°ëŸ´ë¡¤ì—ëŠ” ì¢€ ë” ê°•í•˜ê²Œ
+        lv.z = Mathf.Max(lv.z, 32f); // ¹è·²·Ñ¿¡´Â Á» ´õ °­ÇÏ°Ô
         rb.velocity = transform.TransformDirection(lv);
       }
 
       if (other.CompareTag("BoostPad"))
       {
-        Debug.Log($"ê°ì§€ : {other.tag}");
+        Debug.Log($"°¨Áö : {other.tag}");
         if(boostApplyer != null)
         {
           boostApplyer.ApplyBoost(2f, 1.1f, 2f);

@@ -1,4 +1,4 @@
-ï»¿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Reflection;
 using Unity.Android.Types;
 using UnityEngine;
@@ -13,7 +13,7 @@ public class MissileProj : MonoBehaviour
   public float lifeTime;
   public float detectRadius = 30f;
   private GameObject explosionFx;
-  [SerializeField] private bool debugTestMode = false; // ì”¬ ë‘” í…ŒìŠ¤íŠ¸ìš©ì´ë©´ ì²´í¬
+  [SerializeField] private bool debugTestMode = false; // ¾À µĞ Å×½ºÆ®¿ëÀÌ¸é Ã¼Å©
 
   void Start()
   {
@@ -21,20 +21,20 @@ public class MissileProj : MonoBehaviour
     
     if (debugTestMode)
     {
-      // ì œìë¦¬ ê³ ì •, Init() ì•ˆ ë¶ˆë ¤ë„ ì¶©ëŒ ì‚´ì•„ìˆìŒ
+      // Á¦ÀÚ¸® °íÁ¤, Init() ¾È ºÒ·Áµµ Ãæµ¹ »ì¾ÆÀÖÀ½
       if (rb != null)
       {
         rb.isKinematic = true;
         rb.velocity = Vector3.zero;
       }
-      me = null; // ìê¸° ìì‹  íŒì • ì—†ì•°
+      me = null; // ÀÚ±â ÀÚ½Å ÆÇÁ¤ ¾ø¾Ú
     }
   }
   public void Init(float power, float duration, GameObject shooter, GameObject fxPrefab)
   {
     rb = GetComponent<Rigidbody>();
-    speed = power; // ItemDataì—ì„œ ë®ì–´ì”€
-    me = shooter; // ItemDataì—ì„œ ë®ì–´ì”€
+    speed = power; // ItemData¿¡¼­ µ¤¾î¾¸
+    me = shooter; // ItemData¿¡¼­ µ¤¾î¾¸
     lifeTime = duration;
     explosionFx = fxPrefab;
 
@@ -54,12 +54,12 @@ public class MissileProj : MonoBehaviour
   {
     if (rb == null) return;
 
-    // ê°€ì¥ ê°€ê¹Œìš´ ai íƒìƒ‰
+    // °¡Àå °¡±î¿î ai Å½»ö
     if (target == null)
     {
       GameObject[] aiPlayers = GameObject.FindGameObjectsWithTag("AIPlayer");
-            GameObject player = GameObject.FindGameObjectWithTag("Player"); //í”Œë ˆì´ì–´ íƒìƒ‰
-            if (player != null) { //ë¦¬ìŠ¤íŠ¸ì— ai + player
+            GameObject player = GameObject.FindGameObjectWithTag("Player"); //ÇÃ·¹ÀÌ¾î Å½»ö
+            if (player != null) { //¸®½ºÆ®¿¡ ai + player
             List<GameObject> temp = new List<GameObject>(aiPlayers);
                 temp.Add(player);
                 aiPlayers = temp.ToArray();
@@ -78,14 +78,14 @@ public class MissileProj : MonoBehaviour
       }
     }
 
-    // íƒ€ê¹ƒ ë°œê²¬ ì‹œ ì¶”ì 
+    // Å¸±ê ¹ß°ß ½Ã ÃßÀû
     if (target != null)
     {
       Vector3 targetPos = target.transform.position + Vector3.up * 2f;
       Vector3 dir = (targetPos - transform.position).normalized;
       rb.velocity = dir * speed;
     }
-    // íƒ€ê²Ÿ ì—†ìœ¼ë©´ ì§ì„ 
+    // Å¸°Ù ¾øÀ¸¸é Á÷¼±
     else
     {
       rb.velocity = transform.forward * speed;
@@ -99,9 +99,9 @@ public class MissileProj : MonoBehaviour
 
   void OnCollisionEnter(Collision collision)
   {
-    print("ì¶©ëŒ " + collision.gameObject.name);
+    print("Ãæµ¹ " + collision.gameObject.name);
 
-    // ë¯¸ì‚¬ì¼ ë§ì•˜ì„ ë•Œ
+    // ¹Ì»çÀÏ ¸Â¾ÒÀ» ¶§
     var car = collision.gameObject.GetComponent<CarController>();
     var aiCar = collision.gameObject.GetComponent<AICarController>();
 
@@ -109,8 +109,8 @@ public class MissileProj : MonoBehaviour
 
     if (car != null)
     {
-      // CarControllerì— ìˆëŠ” ì¶©ëŒ íš¨ê³¼ ë°œë™
-    //  car.StartCoroutine(car.HitByMissileCoroutine());
+            // CarController¿¡ ÀÖ´Â Ãæµ¹ È¿°ú ¹ßµ¿
+            //  car.StartCoroutine(car.HitByMissileCoroutine());           
     }
 
         if (aiCar != null)
@@ -128,6 +128,6 @@ public class MissileProj : MonoBehaviour
     {
       print("explosion fx is null");
     }
-    //Destroy(gameObject);
+    Destroy(gameObject);
   }
 }

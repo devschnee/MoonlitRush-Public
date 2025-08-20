@@ -1,4 +1,4 @@
-Ôªøusing System.Collections;
+using System.Collections;
 using UnityEngine;
 
 public class BoosterItem : MonoBehaviour
@@ -15,19 +15,19 @@ public class BoosterItem : MonoBehaviour
   {
     isBoost = true;
 
-        //ÌîåÎ†àÏù¥Ïñ¥Ïö©
-    //var controller = GetComponent<CarController>();
-    //if (controller != null && controller.boostApplyer != null)
-    //{
-    //  controller.boostApplyer.ApplyBoost(duration, 1.1f, power);
+        //«√∑π¿ÃæÓøÎ
+        //var controller = GetComponent<CarController>();
+        //if (controller != null && controller.boostApplyer != null)
+        //{
+        //    controller.boostApplyer.ApplyBoost(duration, 1.1f, power);
 
-    //  Rigidbody rb = controller.GetComponent<Rigidbody>();
-    //  Vector3 lv = controller.transform.InverseTransformDirection(rb.velocity);
-    //  lv.z = Mathf.Max(lv.z, 25f);
-    //  rb.velocity = controller.transform.TransformDirection(lv);
-    //}
+        //    Rigidbody rb = controller.GetComponent<Rigidbody>();
+        //    Vector3 lv = controller.transform.InverseTransformDirection(rb.velocity);
+        //    lv.z = Mathf.Max(lv.z, 25f);
+        //    rb.velocity = controller.transform.TransformDirection(lv);
+        //}
 
-        // AIÏö© AICarController Ï≤¥ÌÅ¨
+        // AIøÎ AICarController √º≈©
         var aiController = GetComponent<AICarController>();
         if (aiController != null && aiController.boostApplyer != null)
         {

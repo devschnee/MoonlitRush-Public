@@ -6,7 +6,6 @@ TagManager:
   tags:
   - JumpRamp
   - SpeedUp
-  - Boost
   - Barrel
   - Goal
   - ItemBooster
@@ -15,7 +14,6 @@ TagManager:
   - CheckPoint
   - BoostPad
   - AIPlayer
-  - AICom
   - ItemBox
   layers:
   - Default
@@ -24,9 +22,9 @@ TagManager:
   - 
   - Water
   - UI
-  - AI
-  - Drivable
   - Ground
+  - Drivable
+  - 
   - 
   - 
   - 

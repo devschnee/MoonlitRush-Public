@@ -87,7 +87,7 @@ public class AICarController : MonoBehaviour
     private Vector3 lastPosition;
     private float stuckTimer;
     private bool isRecovering = false;
-
+  public  bool isFinished = false;
     private void Start()
     {
         carRB = GetComponent<Rigidbody>();
@@ -254,6 +254,7 @@ public class AICarController : MonoBehaviour
         }
 
         Debug.Log("UpdateAIControls() finished.");
+              
     }
 
     void Suspension()
@@ -463,25 +464,27 @@ public class AICarController : MonoBehaviour
             boostCoroutine = StartCoroutine(BoostRoutine(20, 3f));
         }
         else if (other.CompareTag("SpeedUp"))
-        {
+        {        
+
             isSpeedUp = true;
             if (speedUpCoroutine != null)
-            {
-                carRB.AddForce(-transform.up * downforce, ForceMode.Acceleration);
+            {               
                 StopCoroutine (speedUpCoroutine);
             }
-
-            speedUpCoroutine = StartCoroutine(SpeedUpRoutine(100, 3f));
+            carRB.AddForce(transform.forward * downforce, ForceMode.Acceleration);
+            speedUpCoroutine = StartCoroutine(SpeedUpRoutine(150, 3f));
         }
         else if (other.CompareTag("Goal"))
         {
+            isFinished = true;   
+            StopAllCoroutines();
             Debug.Log("완주!");
             moveInput = 0;
             steerInput = 0;
-
+                       
             carRB.drag = 20;
             carRB.angularDrag = 20;
-            //carRB.isKinematic = true;
+            carRB.isKinematic = true;
             final.Finish();
         }
 
@@ -517,8 +520,7 @@ public class AICarController : MonoBehaviour
     //}
 
     IEnumerator SpeedUpRoutine(float force, float duration)
-    {
-        
+    {        
         Debug.Log("AI 슬로프 시작");
         maxSpeed += force;
 
@@ -530,7 +532,7 @@ public class AICarController : MonoBehaviour
 
     }
 
-    public IEnumerator HitByMissileCoroutine()
+    public IEnumerator HitByMissileCoroutine() //미사일 공격 받을 시 코루틴
     {
         if (isInvincible) yield break;
 
@@ -578,9 +580,10 @@ public class AICarController : MonoBehaviour
         carRB.drag = originalDrag;
         carRB.angularDrag = originalAngularDrag;
     }
-
+        
     void CheckForStuck()
     {
+        if(isFinished) return;
         // 차량이 움직이는지 확인
         if (Vector3.Distance(transform.position, lastPosition) < 0.1f)
         {
@@ -608,11 +611,13 @@ public class AICarController : MonoBehaviour
             StartCoroutine(RespawnToNearestWaypoint());
         }
     }
-
+   
     // 복구 루틴 코루틴: 웨이포인트 기준 리스폰
     IEnumerator RespawnToNearestWaypoint()
     {
-        isRecovering = true;
+
+
+        isRecovering = true;              
 
         Transform nearest = null;
         float minDist = Mathf.Infinity;
@@ -638,10 +643,4 @@ public class AICarController : MonoBehaviour
         yield return new WaitForSeconds(recoveryTime);
         isRecovering = false;
     }
-
-   
-   
-
-
-
 }

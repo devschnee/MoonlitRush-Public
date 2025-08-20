@@ -1,17 +1,20 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public class RaceManager : MonoBehaviour
 {
     public static RaceManager Instance;
 
-    public int totalLaps = 1;
-    //public List<Checkpoint_Me> checkpoints = new List<Checkpoint_Me>();
+    public int totalLaps = 2;
+  //  public List<Checkpoint> checkpoints = new List<Checkpoint>();
     public List<RacerInfo> racers = new List<RacerInfo>();
     public EndTrigger endTrigger;
-
+    public List<RacerInfo> finalRank = new List<RacerInfo>();
+    public TextMeshProUGUI lapText;
+    public TextMeshProUGUI timeText;
     private void Awake()
     {
         if (Instance == null)
@@ -76,5 +79,10 @@ public class RaceManager : MonoBehaviour
         }
     }
 
-   
+   //·©Å· ÀúÀå
+
+    public void SaveRanking()
+    {
+        finalRank = racers.OrderBy(r => r.currentRank).ToList();
+    }
 }

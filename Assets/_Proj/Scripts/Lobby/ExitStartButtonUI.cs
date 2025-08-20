@@ -8,7 +8,7 @@ public class ExitStartButtonUI : MonoBehaviour
 {
     public GameObject exit;
     public CarSelectionUI carSelectionUI;
-
+    
     private void Awake()
     {
         exit.SetActive(false);
@@ -35,7 +35,7 @@ public class ExitStartButtonUI : MonoBehaviour
     
    public void CloseExitPanel()
     {
-        exit?.SetActive(false);
+        exit.SetActive(false);
     }
 
     //로비용
@@ -46,10 +46,18 @@ public class ExitStartButtonUI : MonoBehaviour
         SceneManager.LoadScene("SampleScene");
     }
 
+    //결과창에서 재시작
+    public void ReGameStart()
+    {        
+        SceneManager.LoadScene("SampleScene");
+    }
+        
     public void Lobby() //로비로 가기 및 돌아가기
     {
         SceneManager.LoadScene("Lobby");
     }
+
+   
 
 
 }
