@@ -15,19 +15,21 @@ using TMPro;
 // - StartCount.PlayerCar   ← 차 루트
 // - LapCounter.timeText    ← Canvas/LapTimeText
 //   LapCounter.CheckpointManager ← Checkpoints 프리팹
-
+// - Canvas/MinimapUI/RawImageMinimap/MinimapIcon.Target ← 차 루트
 public class SceneBinder : MonoBehaviour
 {
   [Header("Scene refs (Hierarchy에서 드래그)")]
-  public CarSpawn carSpawn;                 // 씬의 CarSpawn
+  public CarSpawn carSpawn;                 // Hierarchy의 CarSpawn
   public CinemachineVirtualCamera vcam;     // Hierarchy의 Virtual Camera
   public ItemSlot canvasItemSlots;          // Canvas/ItemSlots (ItemSlot)
   public SlotUI slot0IconUI;                // Canvas/ItemSlots/Slot0/Slot0Icon (SlotUI)
   public Dashboard dashboard;               // Canvas/Dashboard (Dashboard)
-  public StartCount startCnt;
-  public FinalCount finalCnt;
-  public TextMeshProUGUI lapTimeText;
-  public CheckpointManager checkpoints;
+
+  public StartCount startCnt;               
+  public FinalCount finalCnt;              
+  public TextMeshProUGUI lapTimeText;       
+  public CheckpointManager checkpoints;     
+  public MinimapIcon pMinimapIcon;
 
   IEnumerator Start()
   {
@@ -62,17 +64,23 @@ public class SceneBinder : MonoBehaviour
         AssignByTypeOnly(dashboard, typeof(GameObject), car);
     }
 
-    // (5) Canvas ItemSlot.useItem ← car.UseItem
+
+    // Canvas ItemSlot.useItem ← car.UseItem
     AssignByNameThenType(canvasItemSlots, new[] { "useItem", "UseItem" }, useItem);
 
     if (finalCnt && carCtrl) finalCnt.playerCar = carCtrl;
-    if(startCnt && carCtrl) startCnt.playerCar = carCtrl;
+    if (startCnt && carCtrl) startCnt.playerCar = carCtrl;
     var lapCounter = car.GetComponent<LapCounter>() ?? car.GetComponentInChildren<LapCounter>();
     if (lapCounter)
     {
-      if(lapTimeText) lapCounter.timeText = lapTimeText;
+      if (lapTimeText) lapCounter.timeText = lapTimeText;
       if (checkpoints) lapCounter.checkpointManager = checkpoints;
     }
+
+   
+    if (pMinimapIcon)
+      pMinimapIcon.target = car.transform;
+
     Debug.Log("[SceneAutoWire] Wiring complete.");
   }
 

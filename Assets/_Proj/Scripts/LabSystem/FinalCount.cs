@@ -26,7 +26,7 @@ public class FinalCount : MonoBehaviour
     {
         if (isGameEnding) return;
         isGameEnding = true;
-        TimeManager.Instance.StopTimer();
+        
         finalCountText.gameObject.SetActive(true);
         StartCoroutine(CoCount(seconds > 0 ? seconds : defaultSeconds));
     }
