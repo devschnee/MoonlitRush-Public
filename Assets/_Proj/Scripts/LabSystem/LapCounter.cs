@@ -1,129 +1,141 @@
-
+ï»¿
 using TMPro;
 using UnityEngine;
 
 public class LapCounter : MonoBehaviour
 {
-   public TextMeshProUGUI lapText;
-   public TextMeshProUGUI timeText;
-    private float lapStartTime;
+  public TextMeshProUGUI lapText;
+  public TextMeshProUGUI timeText;
+  private float lapStartTime;
 
-    public int currentLap = 0;    
-    //public int nextCheckpointIndex = 0;
-    private bool raceFinished = false;
-    public Checkpoint nextCheckpoint;  // ´ÙÀ½ Ã¼Å©Æ÷ÀÎÆ®ÀÇ ¿ÀºêÁ§Æ®¸¦ Á÷Á¢ ÂüÁ¶
+  public int currentLap = 0;
+  //public int nextCheckpointIndex = 0;
+  private bool raceFinished = false;
+  public Checkpoint nextCheckpoint;  // ë‹¤ìŒ ì²´í¬í¬ì¸íŠ¸ì˜ ì˜¤ë¸Œì íŠ¸ë¥¼ ì§ì ‘ ì°¸ì¡°
 
-    public CheckpointManager checkpointManager;       
+  public CheckpointManager checkpointManager;
 
-    private void Start()
+  private void Start()
+  {
+    if (checkpointManager == null)
     {
-        if(checkpointManager == null)
-        {
-            checkpointManager = FindObjectOfType<CheckpointManager>();
-        }
-
-        if (checkpointManager != null && checkpointManager.allCheckPoints.Count > 0)
-        {
-            nextCheckpoint = checkpointManager.allCheckPoints[0];
-        }
-
-        lapStartTime = Time.time;
+      checkpointManager = FindObjectOfType<CheckpointManager>();
     }
 
-    private void Update()
+    if (checkpointManager != null && checkpointManager.allCheckPoints.Count > 0)
     {
-        if (raceFinished) return;
-
-        if (timeText != null && !raceFinished)
-        {
-            timeText.text = TimeManager.Instance.GetFormatRaceTime();           
-        }            
+      nextCheckpoint = checkpointManager.allCheckPoints[0];
     }
 
-    public void PassCheckpoint(Checkpoint passedCheckpoint)
+    lapStartTime = Time.time;
+  }
+
+  private void Update()
+  {
+    if (raceFinished) return;
+
+    if (timeText != null && !raceFinished)
     {
-        if (raceFinished) return;
-
-        // Åë°úÇÑ Ã¼Å©Æ÷ÀÎÆ®°¡ ´ÙÀ½ Ã¼Å©Æ÷ÀÎÆ®¿Í ÀÏÄ¡ÇÏ´ÂÁö È®ÀÎ
-        if (passedCheckpoint == nextCheckpoint)
-        {
-            // ´ÙÀ½ Ã¼Å©Æ÷ÀÎÆ®¸¦ ¼³Á¤
-            nextCheckpoint = passedCheckpoint.nextCheckpoint;
-
-            // ¸¶Áö¸· Ã¼Å©Æ÷ÀÎÆ®¸¦ Åë°úÇß´ÂÁö È®ÀÎ
-            if (passedCheckpoint.isFinalCheckpoint)
-            {
-                currentLap++;
-                                
-                nextCheckpoint = checkpointManager.allCheckPoints[0];
-                Debug.Log("1¹ÙÄû ³¡. Ã¼Å©Æ÷ÀÎÆ® ´Ù½Ã ½ÃÀÛ");
-
-                if (currentLap >= RaceManager.Instance.totalLaps)
-                {
-                    raceFinished = true;
-                    Debug.Log(name + " Finished Race!");
-
-                    //ÃÖÁ¾ ±â·Ï Àü´Ş
-                    TimeManager.Instance.StopTimer();
-                    TimeManager.Instance.RecordFinishTime(
-                        gameObject.name,
-                        TimeManager.Instance.RaceDuration);
-
-                    RaceManager.Instance.ActivateEndTrigger();
-                }
-
-                //if (currentLap == RaceManager.Instance.totalLaps)
-                //{
-
-                //}
-
-
-                //TimeManager.Instance.StopTimer(); //½Ã°£ ÀúÀå
-                ////ÃÖÁ¾ ±â·Ï Àü´Ş
-                //TimeManager.Instance.RecordFinishTime(
-                //    gameObject.name,
-                //    TimeManager.Instance.RaceDuration);
-
-                //currentLap++;
-                //// ·¦ÀÌ Æ¯Á¤ È½¼ö¸¦ Ã¤¿ü´ÂÁö È®ÀÎ
-                //if (currentLap >= RaceManager.Instance.totalLaps)
-                //{
-                //    raceFinished = true;
-                //    Debug.Log(name + " Finished Race!");
-
-                //    //Ã¼Å©Æ÷ÀÎÆ® ´Ù µ¹¸é È°¼ºÈ­
-                //    RaceManager.Instance.ActivateEndTrigger();
-                //}
-
-
-            }
-            if (lapText != null)
-            {
-                lapText.text = $"{currentLap} / {RaceManager.Instance.totalLaps} Lap";
-            }
-
-            
-        }
-
+      var tm = TimeManager.Instance;
+      if (tm != null)
+      {
         
+      timeText.text = tm.GetFormatRaceTime();
+      }
+      else
+      {
+        print("TimeManager is null");
+      }
+    }
+  }
+
+
+
+
+  public void PassCheckpoint(Checkpoint passedCheckpoint)
+  {
+    if (raceFinished) return;
+
+    // í†µê³¼í•œ ì²´í¬í¬ì¸íŠ¸ê°€ ë‹¤ìŒ ì²´í¬í¬ì¸íŠ¸ì™€ ì¼ì¹˜í•˜ëŠ”ì§€ í™•ì¸
+    if (passedCheckpoint == nextCheckpoint)
+    {
+      // ë‹¤ìŒ ì²´í¬í¬ì¸íŠ¸ë¥¼ ì„¤ì •
+      nextCheckpoint = passedCheckpoint.nextCheckpoint;
+
+      // ë§ˆì§€ë§‰ ì²´í¬í¬ì¸íŠ¸ë¥¼ í†µê³¼í–ˆëŠ”ì§€ í™•ì¸
+      if (passedCheckpoint.isFinalCheckpoint)
+      {
+        currentLap++;
+
+        nextCheckpoint = checkpointManager.allCheckPoints[0];
+        Debug.Log("1ë°”í€´ ë. ì²´í¬í¬ì¸íŠ¸ ë‹¤ì‹œ ì‹œì‘");
+
+        if (currentLap >= RaceManager.Instance.totalLaps)
+        {
+          raceFinished = true;
+          Debug.Log(name + " Finished Race!");
+
+          //ìµœì¢… ê¸°ë¡ ì „ë‹¬
+          TimeManager.Instance.StopTimer();
+          //TimeManager.Instance.RecordFinishTime(
+          //    gameObject.name,
+          //    TimeManager.Instance.RaceDuration);
+
+          RaceManager.Instance.ActivateEndTrigger();
+        }
+
+        //if (currentLap == RaceManager.Instance.totalLaps)
+        //{
+
+        //}
+
+
+        //TimeManager.Instance.StopTimer(); //ì‹œê°„ ì €ì¥
+        ////ìµœì¢… ê¸°ë¡ ì „ë‹¬
+        //TimeManager.Instance.RecordFinishTime(
+        //    gameObject.name,
+        //    TimeManager.Instance.RaceDuration);
+
+        //currentLap++;
+        //// ë©ì´ íŠ¹ì • íšŸìˆ˜ë¥¼ ì±„ì› ëŠ”ì§€ í™•ì¸
+        //if (currentLap >= RaceManager.Instance.totalLaps)
+        //{
+        //    raceFinished = true;
+        //    Debug.Log(name + " Finished Race!");
+
+        //    //ì²´í¬í¬ì¸íŠ¸ ë‹¤ ëŒë©´ í™œì„±í™”
+        //    RaceManager.Instance.ActivateEndTrigger();
+        //}
+
+
+      }
+      if (lapText != null)
+      {
+        lapText.text = $"{currentLap + 1} / {RaceManager.Instance.totalLaps} Lap";
+      }
+
+
     }
 
-    //public void PassCheckpoint(int checkpointIndex)
-    //{
-    //    if (raceFinished) return;
 
-    //    if (checkpointIndex == nextCheckpointIndex)
-    //    {
-    //        nextCheckpointIndex++;
+  }
 
-    //        if (nextCheckpointIndex >= RaceManager.Instance.checkpoints.Count)
-    //        {
-    //            nextCheckpointIndex = 0;
-    //            currentLap = 1;
-    //            raceFinished = true;
+  //public void PassCheckpoint(int checkpointIndex)
+  //{
+  //    if (raceFinished) return;
 
-    //            Debug.Log(name + " Finished Race!");
-    //        }
-    //    }
-    //}
+  //    if (checkpointIndex == nextCheckpointIndex)
+  //    {
+  //        nextCheckpointIndex++;
+
+  //        if (nextCheckpointIndex >= RaceManager.Instance.checkpoints.Count)
+  //        {
+  //            nextCheckpointIndex = 0;
+  //            currentLap = 1;
+  //            raceFinished = true;
+
+  //            Debug.Log(name + " Finished Race!");
+  //        }
+  //    }
+  //}
 }

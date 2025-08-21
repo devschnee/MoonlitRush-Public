@@ -1,35 +1,36 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class MissileItem : MonoBehaviour
 {
   public Transform shotPoint;
-  public GameObject missilePrefab; // Rigidbody + MissileProj ÄÄÆ÷³ÍÆ® °¡Áø ¿ÀºêÁ§Æ®
+  public GameObject missilePrefab; // Rigidbody + MissileProj ì»´í¬ë„ŒíŠ¸ ê°€ì§„ ì˜¤ë¸Œì íŠ¸
 
   public void Activate(ItemData data)
   {
     if (missilePrefab == null)
     {
-      print("¹Ì»çÀÏ ÇÒ´ç ¾È µÊ");
+      print("ë¯¸ì‚¬ì¼ í• ë‹¹ ì•ˆ ë¨");
       return;
     }
     
     if (data.fxPrefab == null)
     {
-      Debug.LogError("fxPrefabºñ¾îÀÖÀ½");
+      Debug.LogError("fxPrefabë¹„ì–´ìˆìŒ");
       return;
     }
 
     GameObject missile = Instantiate(missilePrefab, shotPoint.position, shotPoint.rotation);
-    missile.transform.localRotation = missilePrefab.transform.localRotation;
-    Debug.Log(missile);
+    //missile.transform.localRotation = missilePrefab.transform.localRotation;
+
     TrailRenderer trail = missile.GetComponentInChildren<TrailRenderer>();
     if (trail != null) { trail.Clear(); }
 
     MissileProj proj = missile.GetComponent<MissileProj>();
     Debug.Log("Proj?" + (proj!=null));
-    if(proj != null)
-    {
-      proj.Init(data.power, data.duration, gameObject, data.fxPrefab);
-    }
+    //if(proj != null)
+    //{
+    //  proj.Init(data.power, data.duration, gameObject, data.fxPrefab);
+    //}
+    proj.Init(data.power, data.duration, gameObject, data.fxPrefab, shotPoint);
   }
 }

@@ -1,27 +1,29 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+Ôªøusing UnityEngine;
 
-// Check Pointø° Ω∫≈©∏≥∆Æ ¿˚øÎ
-[RequireComponent(typeof(Collider))]
+// Check PointÏóê Ïä§ÌÅ¨Î¶ΩÌä∏ Ï†ÅÏö©
 public class Checkpoint : MonoBehaviour
 {
-    public int checkpointId;
-    public bool isFinalCheckpoint = false;
-    public Checkpoint nextCheckpoint;
+  public int checkpointId;
+  public bool isFinalCheckpoint = false;
+  public Checkpoint nextCheckpoint;
 
-    public void SetNextCheckpoint(Checkpoint next)
-    {
-        nextCheckpoint = next;
-    }
+  void Reset()
+  {
+    var col = GetComponent<Collider>();
+    if (col) col.isTrigger = true;
+  }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        // «√∑π¿ÃæÓ¿Œ¡ˆ »Æ¿Œ        
-        RacerInfo racer = other.GetComponent<RacerInfo>();
-        if (racer != null)
-        {
-            racer.lapCounter.PassCheckpoint(this);
-        }
-    }
+  void OnTriggerEnter(Collider other)
+  {
+    var lap = other.GetComponentInParent<LapCounter>() ?? other.GetComponent<LapCounter>();
+    if (lap == null) return;
+
+    if (lap.nextCheckpoint != this) return;
+
+    lap.PassCheckpoint(this);
+  }
+  public void SetNextCheckpoint(Checkpoint next)
+  {
+    nextCheckpoint = next;
+  }
 }

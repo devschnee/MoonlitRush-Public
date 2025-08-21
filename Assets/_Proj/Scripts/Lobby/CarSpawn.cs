@@ -1,41 +1,39 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using TMPro;
+ï»¿using UnityEngine;
 
 public class CarSpawn : MonoBehaviour
 {
-    public GameObject[] playerCar;
-    public Transform spawnPoint; // Â÷·® ½ÃÀÛ À§Ä¡
-    LapCounter lapCounter;
+  public GameObject[] playerCar;
+  public Transform spawnPoint; // ì°¨ëŸ‰ ì‹œì‘ ìœ„ì¹˜
 
-    void Start()
+  public GameObject lastSpawned { get; private set; }
+
+  void Start()
+  {
+    int selectedCarIndex = PlayerPrefs.GetInt("SelectedCarIndex", 0);
+
+    if (selectedCarIndex >= 0 && selectedCarIndex < playerCar.Length)
     {
-        int selectedCarIndex = PlayerPrefs.GetInt("SelectedCarIndex", 0);
-        int carCount = PlayerPrefs.GetInt("CarCount", 0);
+      GameObject go = Instantiate(playerCar[selectedCarIndex], spawnPoint.position, spawnPoint.rotation);
 
+      go.SetActive(true);
+      Rigidbody rb = go.GetComponent<Rigidbody>();
+      if (rb != null)
+      {
+        rb.isKinematic = false;
+        rb.useGravity = true;
+        rb.constraints = RigidbodyConstraints.None;
+        rb.WakeUp();
+      }
 
-        if (selectedCarIndex >= 0 && selectedCarIndex < playerCar.Length)
-        {
-            GameObject gameObject1 = Instantiate(playerCar[selectedCarIndex], spawnPoint.position, spawnPoint.rotation);
-            GameObject spawnPlayer = gameObject1;
-            lapCounter = spawnPlayer.GetComponent<LapCounter>();
-            lapCounter.lapText = RaceManager.Instance.lapText;
-            lapCounter.timeText = RaceManager.Instance.timeText;
-        }
-        else
-        {
-            Debug.LogError("¼±ÅÃµÈ Â÷·® index°¡ Àß¸øµÊ!");
-        }
+      // Intro Countdown ìŠ¤í¬ë¦½íŠ¸ ì—°ê²° ì‹œ ì‚­ì œ. í•´ë‹¹ ìŠ¤í¬ë¦½íŠ¸ì—ì„œ Time.timeScale = 1f; ì¤˜ì•¼ í•¨.
+      //Time.timeScale = 1f;
 
+      go.transform.parent = null;
+      lastSpawned = go;
     }
-        //GameObject car = Instantiate(
-        //    playerCar[selectedIndex],
-        //    spawnPoint.position,
-        //    spawnPoint.rotation
-        //);
-
-    
-
-
+    else
+    {
+      print("ì„ íƒëœ ì°¨ëŸ‰ idxê°€ ì˜ëª» ë¨");
+    }
+  }
 }

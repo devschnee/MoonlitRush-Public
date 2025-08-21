@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+ï»¿using System.Collections;
 using TMPro;
 using UnityEngine;
 using System;
@@ -59,8 +58,8 @@ public class FinalCount : MonoBehaviour
     //{
     //    if (isGameEnding == false) {
     //    isGameEnding = true;
-    //        TimeManager.Instance.PauseTimer(); //½Ã°£ ¸ØÃã
-    //        Debug.Log("Ä«¿îÆ® ½ÃÀÛ");
+    //        TimeManager.Instance.PauseTimer(); //ì‹œê°„ ë©ˆì¶¤
+    //        Debug.Log("ì¹´ìš´íŠ¸ ì‹œì‘");
     //        finalCountText.gameObject.SetActive(true);
     //        StartCoroutine(EndCount());
     //    }
@@ -78,9 +77,9 @@ public class FinalCount : MonoBehaviour
     //    yield return new WaitForSeconds(1f);
 
     //    finalCountText.text = "";
-    //    //¿£µù
+    //    //ì—”ë”©
     //}
 
 }
 
-//ÇÃ·¹ÀÌ¾î, AI¿¡ °á½Â¼± Æ®¸®°Å Ã³¸® ÄÚµå Ãß°¡
+//í”Œë ˆì´ì–´, AIì— ê²°ìŠ¹ì„  íŠ¸ë¦¬ê±° ì²˜ë¦¬ ì½”ë“œ ì¶”ê°€

@@ -1,26 +1,21 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
+ï»¿using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 public class EndTrigger : MonoBehaviour
 {
     private BoxCollider collider;
-    private FinalCount final; //¿ÏÁÖ ½Ã °ÔÀÓ Á¾·á ¾Ë¸®´Â Ä«¿îÆ® ½ºÅ©¸³Æ®        
-    private bool isFinished = false;
+  private FinalCount final; // ì™„ì£¼ ì‹œ ê²Œì„ ì¢…ë£Œ ì•Œë¦¬ëŠ” ì¹´ìš´íŠ¸ ìŠ¤í¬ë¦½íŠ¸
+  private bool isFinished = false;
 
     private void Awake()
     {
         collider = GetComponent<BoxCollider>();
-       
     }
 
     private void Start()
     {
-        final = FindAnyObjectByType<FinalCount>();
-
-
-        if (collider != null)
+    final = FindAnyObjectByType<FinalCount>();
+        if(collider != null)
         {
             collider.enabled = false;
         }        
@@ -31,39 +26,34 @@ public class EndTrigger : MonoBehaviour
         if (collider != null)
         {
             collider.enabled = true;
-            Debug.Log("EndTrigger È°¼ºÈ­");
+            Debug.Log("EndTrigger í™œì„±í™”");
         }
     }
-
-    private void OnTriggerEnter(Collider other)
+  void OnTriggerEnter(Collider other)
+  {
+    if (!isFinished) return;
+    else if (!isFinished)
     {
-        if (isFinished) return;
-        else if (!isFinished)
-        {
-            isFinished = true;
-            Debug.Log("¿ÏÁÖ!");
+      isFinished = true;
+      Rigidbody rb = other.GetComponent<Rigidbody>();
+      rb.drag = 20;
+      rb.angularDrag = 20;
+      rb.isKinematic = true;
 
-            Rigidbody rb = other.GetComponent<Rigidbody>();           
-            rb.drag = 20;
-            rb.angularDrag = 20;
-            rb.isKinematic = true;
-
-            if (other.CompareTag("Player"))
-            {               
-                CarController player = other.GetComponent<CarController>();                
-                player.moveInput = 0;
-                player.steerInput = 0;    
-            }
-            else if (other.CompareTag("AIPlayer"))
-            {
-                AICarController ai = other.GetComponent<AICarController>();
-                ai.moveInput = 0;
-                ai.steerInput = 0;
-                
-            }
-
-            final.Finish();
-        }
+      if (other.CompareTag("Player"))
+      {
+        CarController p = other.GetComponent<CarController>();
+        p.moveInput = 0f;
+        p.steerInput = 0f;
+      }
+      else if (other.CompareTag("AIPlayer"))
+      {
+        AICarController ai = other.GetComponent<AICarController>();
+        ai.moveInput = 0f;
+        ai.steerInput = 0f;
+      }
     }
+    final.Finish();
+  }
 
 }

@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,7 +24,7 @@ public class ExitStartButtonUI : MonoBehaviour
 
     public void GameExit()
     {
-        Debug.Log("°ÔÀÓ Á¾·á ¿äÃ»");        
+        Debug.Log("ê²Œì„ ì¢…ë£Œ ìš”ì²­");        
         Application.Quit();
     }
 
@@ -38,23 +38,23 @@ public class ExitStartButtonUI : MonoBehaviour
         exit.SetActive(false);
     }
 
-    //·Îºñ¿ë
+    //ë¡œë¹„ìš©
     public void GameStart()
     {
-        // ¼±ÅÃ Á¤º¸ ÀúÀå
+        // ì„ íƒ ì •ë³´ ì €ì¥
         carSelectionUI.SaveSelection();
-        SceneManager.LoadScene("SampleScene");
+    UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene");
     }
 
-    //°á°úÃ¢¿¡¼­ Àç½ÃÀÛ
+    //ê²°ê³¼ì°½ì—ì„œ ì¬ì‹œì‘
     public void ReGameStart()
-    {        
-        SceneManager.LoadScene("SampleScene");
+    {
+    UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene");
     }
         
-    public void Lobby() //·Îºñ·Î °¡±â ¹× µ¹¾Æ°¡±â
+    public void Lobby() //ë¡œë¹„ë¡œ ê°€ê¸° ë° ëŒì•„ê°€ê¸°
     {
-        SceneManager.LoadScene("Lobby");
+    UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
     }
 
    
