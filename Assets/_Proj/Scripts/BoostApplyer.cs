@@ -5,8 +5,8 @@ public class BoostApplyer : MonoBehaviour
 {
   [Header("FX")]
   public BoostFX fx;
- // public CarController controller;
-    public AICarController ai;
+  public CarController controller;
+  public AICarController ai;
   [Header("Timing")]
   public float fadeTime = 0.15f;
 

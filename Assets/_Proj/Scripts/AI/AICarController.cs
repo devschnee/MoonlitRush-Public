@@ -26,8 +26,8 @@ public class AICarController : MonoBehaviour
     public WaypointTest WaypointTest;
     private int currentWaypointIndex = 0;
     private float targetSpeed; //웨이포인트용
-    private float moveInput = 0;
-    private float steerInput = 0;
+    [HideInInspector]public float moveInput = 0;
+    [HideInInspector]public float steerInput = 0;
 
     [Header("Car settings")]
     [SerializeField] private float acceleration = 25f;
@@ -471,21 +471,14 @@ public class AICarController : MonoBehaviour
             {               
                 StopCoroutine (speedUpCoroutine);
             }
-            carRB.AddForce(transform.forward * downforce, ForceMode.Acceleration);
+            carRB.AddForce(transform.forward * downforce * Time.deltaTime, ForceMode.Acceleration);
             speedUpCoroutine = StartCoroutine(SpeedUpRoutine(150, 3f));
         }
         else if (other.CompareTag("Goal"))
         {
             isFinished = true;   
             StopAllCoroutines();
-            Debug.Log("완주!");
-            moveInput = 0;
-            steerInput = 0;
-                       
-            carRB.drag = 20;
-            carRB.angularDrag = 20;
-            carRB.isKinematic = true;
-            final.Finish();
+            Debug.Log("완주!");           
         }
 
     }

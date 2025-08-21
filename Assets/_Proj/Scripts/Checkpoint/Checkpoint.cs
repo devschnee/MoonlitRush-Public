@@ -17,9 +17,8 @@ public class Checkpoint : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // 플레이어인지 확인
-        //콜라이더는 자식에 Info스크립트는 부모에 있음
-        RacerInfo racer = other.GetComponentInParent<RacerInfo>();
+        // 플레이어인지 확인        
+        RacerInfo racer = other.GetComponent<RacerInfo>();
         if (racer != null)
         {
             racer.lapCounter.PassCheckpoint(this);
