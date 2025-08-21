@@ -87,7 +87,7 @@ public class AICarController : MonoBehaviour
     private Vector3 lastPosition;
     private float stuckTimer;
     private bool isRecovering = false;
-  public  bool isFinished = false;
+    public  bool isFinished = false;
     private void Start()
     {
         carRB = GetComponent<Rigidbody>();
@@ -182,13 +182,13 @@ public class AICarController : MonoBehaviour
         //다음 웨이포인트 간의 각도 계산
         Transform currentWP = WaypointTest.GetWaypoint(currentWaypointIndex);
         Transform nextWP = WaypointTest.GetWaypoint((currentWaypointIndex + 1) % WaypointTest.Count);
-        Vector3 toNext = (nextWP.position - currentWP.position).normalized;
+        Vector3 toNext = (nextWP.position - currentWP.position).normalized; //다음 웨이포인트 계산
         Vector3 toCar = (target - transform.position).normalized;
         float angleToNext = Vector3.Angle(transform.forward, toCar);
 
         Debug.Log($"Current Angle: {angleToNext}, Current Speed: {currentSpeed}"); //콘솔에 찍힘 그렇담 드리프트 로직이 문제란 소리....
 
-        currentSpeed = carRB.velocity.magnitude ; //rigidbody 속도(m/s)를 km/h로 변환               
+        currentSpeed = carRB.velocity.magnitude; //rigidbody 속도(m/s)를 km/h로 변환               
 
         if (angleToNext > 10f && currentSpeed > 50f && !isDrifting) //급커브 드리프트
         {
@@ -234,10 +234,18 @@ public class AICarController : MonoBehaviour
 
         }
 
+        //웨이포인트 정방향으로
+        float dotWP = Vector3.Dot(transform.forward, toCar);
+        if (dotWP < 0f)
+        {
+            currentWaypointIndex = (currentWaypointIndex + 1) % WaypointTest.Count;
+        }
+
+
 
         //다음 Waypoint 확인        
         float distance = Vector3.Distance(transform.position, target);
-        if (distance < 10f)
+        if (distance < 10f || dotWP < 0f)
         {                                                  //마지막에 도달하면 다시 0부터 시작(루프)
             currentWaypointIndex = (currentWaypointIndex + 1) % WaypointTest.Count;
         }
@@ -605,8 +613,10 @@ public class AICarController : MonoBehaviour
         float minDist = Mathf.Infinity;
         for (int i = 0; i < WaypointTest.Count; i++) //가까운 웨이포인트 탐색
         {
+           float dot = Vector3.Dot(transform.forward, (WaypointTest.GetWaypoint(i).position - transform.position).normalized);
             float dist = Vector3.Distance(transform.position, WaypointTest.GetWaypoint(i).position);
-            if (dist < minDist)
+            
+            if (dist < minDist && dot > 0f)
             {
                 minDist = dist;
                 nearest = WaypointTest.GetWaypoint(i);
@@ -620,7 +630,12 @@ public class AICarController : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(nearest.forward);
             carRB.velocity = Vector3.zero;
             carRB.angularVelocity = Vector3.zero;
+            carRB.isKinematic = true;
         }
+
+       
+        yield return null;
+        carRB.isKinematic = false;
 
         yield return new WaitForSeconds(recoveryTime);
         isRecovering = false;
