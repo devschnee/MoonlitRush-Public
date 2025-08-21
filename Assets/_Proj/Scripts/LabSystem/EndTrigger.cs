@@ -53,7 +53,7 @@ public class EndTrigger : MonoBehaviour
         ai.steerInput = 0f;
       }
     }
-    final.Finish();
+    final.FinishAI();
   }
 
 }

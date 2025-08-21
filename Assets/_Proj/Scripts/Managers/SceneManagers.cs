@@ -2,9 +2,9 @@
 using UnityEngine.SceneManagement;
 
 // Use it by attaching it to an empty game object.
-public class SceneManager : MonoBehaviour
+public class SceneManagers : MonoBehaviour
 {
-  public static SceneManager Instance;
+  public static SceneManagers Instance;
 
   void Awake()
   {

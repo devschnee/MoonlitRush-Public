@@ -485,7 +485,7 @@ public class AICarController : MonoBehaviour
             carRB.drag = 20;
             carRB.angularDrag = 20;
             carRB.isKinematic = true;
-            final.Finish();
+            final.FinishAI();
         }
 
     }

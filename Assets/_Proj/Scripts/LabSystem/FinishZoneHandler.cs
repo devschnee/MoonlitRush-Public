@@ -5,33 +5,37 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class FinishZoneHandler : MonoBehaviour
 {
-    public int countdownSeconds = 10;
+  public int countdownSeconds = 10;
 
-    private bool countdownStarted = false;
+  private bool countdownStarted = false;
 
-    void Reset()
+  void Reset()
+  {
+    var col = GetComponent<Collider>();
+    if (col) col.isTrigger = true;
+  }
+
+  void OnTriggerEnter(Collider other)
+  {
+    if (countdownStarted) return;
+
+    countdownStarted = true;
+
+    if (FinalCount.Instance != null)
     {
-        var col = GetComponent<Collider>();
-        if (col) col.isTrigger = true;
+      var player = other.GetComponentInParent<CarController>();
+      if (player != null)
+      {
+        FinalCount.Instance.FinishPlayer();
+        return;
+      }
+
+      var ai = other.GetComponentInParent<AICarController>();
+      if (ai != null)
+      {
+        FinalCount.Instance.FinishAI();
+        return;
+      }
     }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (countdownStarted) return;
-
-        // 어떤 차량이든
-        //var racer = other.GetComponentInParent<RacerInfo>() ?? other.GetComponent<RacerInfo>();
-        //if (racer == null) return;
-
-        countdownStarted = true;
-
-        if (FinalCount.Instance != null)
-        {
-            FinalCount.Instance.StartCountdown(countdownSeconds);
-        }
-        else
-        {
-            Debug.LogWarning("FinalCount.Instance 없음. 카운트다운 생략.");
-        }
-    }
+  }
 }

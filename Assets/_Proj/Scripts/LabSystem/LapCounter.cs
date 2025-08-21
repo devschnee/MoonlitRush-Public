@@ -65,77 +65,23 @@ public class LapCounter : MonoBehaviour
       // 마지막 체크포인트를 통과했는지 확인
       if (passedCheckpoint.isFinalCheckpoint)
       {
-        currentLap++;
-
-        nextCheckpoint = checkpointManager.allCheckPoints[0];
-        Debug.Log("1바퀴 끝. 체크포인트 다시 시작");
+        if (currentLap < RaceManager.Instance.totalLaps)
+          currentLap++;
 
         if (currentLap >= RaceManager.Instance.totalLaps)
         {
           raceFinished = true;
-          Debug.Log(name + " Finished Race!");
-
-          //최종 기록 전달
           TimeManager.Instance.StopTimer();
-          //TimeManager.Instance.RecordFinishTime(
-          //    gameObject.name,
-          //    TimeManager.Instance.RaceDuration);
-
           RaceManager.Instance.ActivateEndTrigger();
         }
 
-        //if (currentLap == RaceManager.Instance.totalLaps)
-        //{
-
-        //}
-
-
-        //TimeManager.Instance.StopTimer(); //시간 저장
-        ////최종 기록 전달
-        //TimeManager.Instance.RecordFinishTime(
-        //    gameObject.name,
-        //    TimeManager.Instance.RaceDuration);
-
-        //currentLap++;
-        //// 랩이 특정 횟수를 채웠는지 확인
-        //if (currentLap >= RaceManager.Instance.totalLaps)
-        //{
-        //    raceFinished = true;
-        //    Debug.Log(name + " Finished Race!");
-
-        //    //체크포인트 다 돌면 활성화
-        //    RaceManager.Instance.ActivateEndTrigger();
-        //}
-
-
+        nextCheckpoint = checkpointManager.allCheckPoints[0];
       }
       if (lapText != null)
       {
-        lapText.text = $"{currentLap + 1} / {RaceManager.Instance.totalLaps} Lap";
+        int displayLap = Mathf.Min(currentLap + 1, RaceManager.Instance.totalLaps);
+        lapText.text = $"{displayLap} / {RaceManager.Instance.totalLaps} Lap";
       }
-
-
     }
-
-
   }
-
-  //public void PassCheckpoint(int checkpointIndex)
-  //{
-  //    if (raceFinished) return;
-
-  //    if (checkpointIndex == nextCheckpointIndex)
-  //    {
-  //        nextCheckpointIndex++;
-
-  //        if (nextCheckpointIndex >= RaceManager.Instance.checkpoints.Count)
-  //        {
-  //            nextCheckpointIndex = 0;
-  //            currentLap = 1;
-  //            raceFinished = true;
-
-  //            Debug.Log(name + " Finished Race!");
-  //        }
-  //    }
-  //}
 }

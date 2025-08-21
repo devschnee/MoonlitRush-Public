@@ -10,16 +10,13 @@ public class TimeManager : MonoBehaviour
     public class PlayerTimeData
     {
         public string playerName;
-        public float finishTime;
-        public bool finished = true;
+        public float finishTime; // -1이면 "None"
     }
 
-    public List<PlayerTimeData> data = new List<PlayerTimeData>();
-    public List<PlayerTimeData> Results => GetRanking();
-
-
-    private float raceStartTime; // (Time.time)
-    private float raceEndTime;
+  private Dictionary<string, PlayerTimeData> times = new Dictionary<string, PlayerTimeData>();
+  
+  private float raceStartTime; // Time.time
+  private float raceEndTime;
     private bool isTiming;
     private float pausedTime;
     private float totalPausedDuration; // Total time paused so far
@@ -104,6 +101,44 @@ public class TimeManager : MonoBehaviour
         totalPausedDuration = 0f;
     }
 
+   public void RecordFinish(string racerName)
+  {
+    if (!times.ContainsKey(racerName))
+    {
+      float t = Time.time - raceStartTime - totalPausedDuration;
+      times[racerName] = new PlayerTimeData {  playerName = racerName, finishTime = t };
+    }
+  }
+
+  public void RecordNone(string racerName)
+  {
+    if (!times.ContainsKey(racerName))
+    {
+      times[racerName] = new PlayerTimeData { playerName = racerName, finishTime = -1f };
+    }
+  }
+
+  public List<PlayerTimeData> GetRanking()
+  {
+    var list = new List<PlayerTimeData>(times.Values);
+    
+    // Sort racing records by fastest time
+    list.Sort((a, b) =>
+    {
+      if (a.finishTime < 0 && b.finishTime < 0) return 0;
+      if (a.finishTime < 0) return 1;
+      if (b.finishTime < 0) return -1;
+      return a.finishTime.CompareTo(b.finishTime);
+    });
+    return list;
+  }
+  public string FormatTime(float t)
+  {
+    if (t < 0) return "None";
+    int m = Mathf.FloorToInt(t / 60f);
+    float s = t % 60f;
+    return $"{m:00} : {s:00.000}";
+  }
     //public void RecordFinishTime(string pName, float fTime)
     //{
     //    string name = string.IsNullOrWhiteSpace(pName)
@@ -124,9 +159,4 @@ public class TimeManager : MonoBehaviour
     //        finishTime = fTime,
     //    });
     //}
-    public List<PlayerTimeData> GetRanking()
-    {
-        return data.OrderBy(p => p.finishTime).ToList(); // Sort racing records by fastest time
-    }
-
 }
