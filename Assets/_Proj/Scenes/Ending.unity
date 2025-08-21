@@ -1928,7 +1928,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showDelay: 0.6
-  podium: {fileID: 0}
   rankingUIPrefab: {fileID: 771172392}
   rankingUIParent: {fileID: 1124493570}
   buttonsRoot: {fileID: 136592138}
@@ -2253,7 +2252,11 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3427226045391636419, guid: f9c34f00ace74934f82bd2a5f4d4402d,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6540141917682516245}
   m_SourcePrefab: {fileID: 100100000, guid: f9c34f00ace74934f82bd2a5f4d4402d, type: 3}
 --- !u!224 &6540141917682516244 stripped
 RectTransform:
@@ -2261,6 +2264,21 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1874952648154947076}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6540141917682516245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 545377222051294374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c1bb998157c2df4db935dd0562ae330, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rankTxt: {fileID: 0}
+  nameTxt: {fileID: 539962507}
+  timeTxt: {fileID: 283367245}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
