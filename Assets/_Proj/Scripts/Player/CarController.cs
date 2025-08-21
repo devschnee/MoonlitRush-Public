@@ -819,4 +819,14 @@ public class CarController : MonoBehaviour
     moveInput = 1f;
   }
   #endregion
+
+  void OnCollisionEnter(Collision collision)
+  {
+    if (collision.gameObject.CompareTag("Wall"))
+    {
+      Rigidbody rb = GetComponent<Rigidbody>();
+      rb.velocity *= 0.5f;
+      rb.velocity = Vector3.Reflect(rb.velocity, collision.contacts[0].normal) * 0.3f;
+    }
+  }
 }
