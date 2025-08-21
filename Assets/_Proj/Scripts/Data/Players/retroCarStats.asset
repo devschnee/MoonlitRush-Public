@@ -16,7 +16,11 @@ MonoBehaviour:
   acceleration: 3
   maxSpeed: 21.5
   deceleration: 3
-  steerForce: 20
+  decelLerpSpeed: 7
+  coastFactor: 0.6
+  minSpeedForFullDecel: 6
+  currDecelMag: 0
+  steerForce: 15
   angularDrag: 10
   turningCurve:
     serializedVersion: 2
@@ -90,9 +94,3 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   brakePow: 10
-  coastForceCoeff: 20
-  brakeForceCoeff: 24
-  frontBiasFwd: 0.78
-  rearBiasRev: 0.81
-  lowSpeed: 2.5
-  antiPitchCoeff: 70
