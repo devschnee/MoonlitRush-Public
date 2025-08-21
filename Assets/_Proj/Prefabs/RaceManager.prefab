@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5575082491695480197}
   - component: {fileID: 4605979351777075164}
-  - component: {fileID: 2126370776776955047}
+  - component: {fileID: 5492076454586458402}
   m_Layer: 0
   m_Name: RaceManager
   m_TagString: Untagged
@@ -51,7 +51,7 @@ MonoBehaviour:
   finalRank: []
   lapText: {fileID: 0}
   timeText: {fileID: 0}
---- !u!114 &2126370776776955047
+--- !u!114 &5492076454586458402
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -60,7 +60,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 2503231252392669312}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c628dd17b498aa847ab016bb26dfc504, type: 3}
+  m_Script: {fileID: 11500000, guid: fd0649853b4a9454fb5c4cc16239eb97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tmpText: {fileID: 0}
+  nameTexts: []
+  rankTexts: []
