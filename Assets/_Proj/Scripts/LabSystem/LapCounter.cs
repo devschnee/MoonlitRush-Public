@@ -47,8 +47,6 @@ public class LapCounter : MonoBehaviour
         print("TimeManager is null");
       }
     }
-
-
   }
 
 
