@@ -28,12 +28,7 @@ public class RaceManager : MonoBehaviour
         }
     }
 
-    //checkpoint 등록
-    //public void RegisterCheckpoint(Checkpoint_Me cp)
-    //{
-    //    if (!checkpoints.Contains(cp))
-    //        checkpoints.Add(cp);
-    //}
+    
 
     //차량 등록
     public void RegisterRacer(RacerInfo racer)

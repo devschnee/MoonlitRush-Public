@@ -1,10 +1,10 @@
-ï»¿using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 public class EndTrigger : MonoBehaviour
 {
     private BoxCollider collider;
-  private FinalCount final; // ì™„ì£¼ ì‹œ ê²Œì„ ì¢…ë£Œ ì•Œë¦¬ëŠ” ì¹´ìš´íŠ¸ ìŠ¤í¬ë¦½íŠ¸
+  private FinalCount final; // ¿ÏÁÖ ½Ã °ÔÀÓ Á¾·á ¾Ë¸®´Â Ä«¿îÆ® ½ºÅ©¸³Æ®
   private bool isFinished = false;
 
     private void Awake()
@@ -26,12 +26,12 @@ public class EndTrigger : MonoBehaviour
         if (collider != null)
         {
             collider.enabled = true;
-            Debug.Log("EndTrigger í™œì„±í™”");
+            Debug.Log("EndTrigger È°¼ºÈ­");
         }
     }
   void OnTriggerEnter(Collider other)
   {
-    if (!isFinished) return;
+    if (isFinished) return;
     else if (!isFinished)
     {
       isFinished = true;
@@ -53,7 +53,7 @@ public class EndTrigger : MonoBehaviour
         ai.steerInput = 0f;
       }
     }
-    final.Finish();
+    final.FinishAI();
   }
 
 }

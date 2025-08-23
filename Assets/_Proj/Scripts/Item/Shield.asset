@@ -9,14 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4ed4b042243c4747b26ac415e709754, type: 3}
+  m_Script: {fileID: 11500000, guid: 07e3f040caa2abd4089430fe41788feb, type: 3}
   m_Name: Shield
   m_EditorClassIdentifier: 
   itemName: Shield
   description: 
   type: 2
-  icon: {fileID: 21300000, guid: 851b92eb340632345b66ca56a83134bb, type: 3}
-  fxPrefab: {fileID: 120096, guid: 07bee576df5b5e049a39f20f65b6ddb1, type: 3}
+  icon: {fileID: 21300000, guid: 384239737fed1db4aae7d3af66287104, type: 3}
+  fxPrefab: {fileID: 1481440290192140, guid: 7ffd6822b816c9b428b2295eb5d7fa00, type: 3}
   duration: 3
-  power: 30
+  power: 10
   useSound: {fileID: 0}

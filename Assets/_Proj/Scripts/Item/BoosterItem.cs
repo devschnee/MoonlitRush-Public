@@ -15,17 +15,17 @@ public class BoosterItem : MonoBehaviour
   {
     isBoost = true;
 
-        //플레이어용
-        //var controller = GetComponent<CarController>();
-        //if (controller != null && controller.boostApplyer != null)
-        //{
-        //    controller.boostApplyer.ApplyBoost(duration, 1.1f, power);
+       // 플레이어용
+        var controller = GetComponent<CarController>();
+        if (controller != null && controller.boostApplyer != null)
+        {
+            controller.boostApplyer.ApplyBoost(duration, 1.1f, power);
 
-        //    Rigidbody rb = controller.GetComponent<Rigidbody>();
-        //    Vector3 lv = controller.transform.InverseTransformDirection(rb.velocity);
-        //    lv.z = Mathf.Max(lv.z, 25f);
-        //    rb.velocity = controller.transform.TransformDirection(lv);
-        //}
+            Rigidbody rb = controller.GetComponent<Rigidbody>();
+            Vector3 lv = controller.transform.InverseTransformDirection(rb.velocity);
+            lv.z = Mathf.Max(lv.z, 25f);
+            rb.velocity = controller.transform.TransformDirection(lv);
+        }
 
         // AI용 AICarController 체크
         var aiController = GetComponent<AICarController>();

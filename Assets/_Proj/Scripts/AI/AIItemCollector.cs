@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using static UnityEditor.Progress;
 
 public class AIItemCollector : MonoBehaviour
 {
@@ -29,6 +30,7 @@ public class AIItemCollector : MonoBehaviour
         if (itemControl != null && dataToUse != null)
         {
             itemControl.PickupItem(dataToUse);
+            Debug.Log("AI 아이템 획득: " + dataToUse.itemName);
         }
 
         // 박스 비활성화 & 리스폰
