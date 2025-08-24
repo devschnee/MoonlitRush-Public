@@ -27,17 +27,17 @@ public class AIItemControl : MonoBehaviour
             switch (item.type)
             {
                 case ItemType.Booster:
-                    if (IsStraightRoad()) { Debug.Log("아이템: 부스터 사용"); Use(i); break; }
+                    if (IsStraightRoad()) { Use(i); break; }
                     //직선 구간에서 사용
                     
                     break;
                 case ItemType.Missile:
-                    if (HasTargetAhead()) { Debug.Log("아이템: 미사일 사용"); Use(i); break; }
+                    if (HasTargetAhead()) { Use(i); break; }
                     //앞에 상대가 있으면 사용
                    
                     break;
                 case ItemType.Shield:
-                    if (IsThreatDetected()) { Debug.Log("아이템: 실드 사용"); Use(i); break; }
+                    if (IsThreatDetected()) { Use(i); break; }
                     //미사일 공격 받을 시 사용(확률 5:5)
                    
                     break;
@@ -70,7 +70,7 @@ public class AIItemControl : MonoBehaviour
         }
 
         itemInventory.RemoveAt(index); // 사용 후 제거
-        Debug.Log("아이템 사용 후 제거됨");
+        
         lastDecisionTime = Time.time;
     }
 

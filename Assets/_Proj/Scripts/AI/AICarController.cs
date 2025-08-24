@@ -159,7 +159,7 @@ public class AICarController : MonoBehaviour
         Vector3 toCar = (target - transform.position).normalized;
         float angleToNext = Vector3.Angle(transform.forward, toCar);
 
-        Debug.Log($"Current Angle: {angleToNext}, Current Speed: {currentSpeed}"); //콘솔에 이상한 값이 찍힘 그렇담 드리프트 로직이 문제란 소리...., 픽시드 업데이트에서 디버그 찍는 중이라 계속 나오는 게 당연
+     //   Debug.Log($"Current Angle: {angleToNext}, Current Speed: {currentSpeed}"); //콘솔에 이상한 값이 찍힘 그렇담 드리프트 로직이 문제란 소리...., 픽시드 업데이트에서 디버그 찍는 중이라 계속 나오는 게 당연
 
         currentSpeed = carRB.velocity.magnitude;
 
@@ -168,7 +168,7 @@ public class AICarController : MonoBehaviour
         {
             isDrifting = true;
 
-            Debug.Log($"Drifting started! Angle: {angleToNext}, Speed: {currentSpeed}"); //이게 연속으로 나오면 문제있음
+          //  Debug.Log($"Drifting started! Angle: {angleToNext}, Speed: {currentSpeed}"); //이게 연속으로 나오면 문제있음
         }
         else if (angleToNext < 13f && isDrifting && Mathf.Abs(carLocalVelocity.x) < 2f)
         { //직선 구간
@@ -345,8 +345,7 @@ public class AICarController : MonoBehaviour
             Air();
         }
         else if (isGrounded)
-        {
-            Debug.Log("공중 제어 X, 일반 주행 시작");
+        {           
             Accelerate();
             Decelerate();
             Turn();
@@ -398,8 +397,7 @@ public class AICarController : MonoBehaviour
         }
 
         void Air()
-        {
-            Debug.Log("공중 제어");
+        {          
             steerInput = 0;
             moveInput = 0;
             carRB.angularVelocity *= 0.9f;
@@ -463,8 +461,6 @@ public class AICarController : MonoBehaviour
 
     IEnumerator BoostRoutine(float force, float duration)
     {
-        Debug.Log("AI 부스트 패드 코루틴 시작");
-
         // 초기 속도 강제 설정
         Vector3 localVelocity = transform.InverseTransformDirection(carRB.velocity);
         localVelocity.z = Mathf.Max(localVelocity.z, force);
@@ -547,23 +543,18 @@ public class AICarController : MonoBehaviour
         Vector3 finalLv = transform.InverseTransformDirection(carRB.velocity);
         finalLv.z = Mathf.Min(finalLv.z, targetSpeed);
         carRB.velocity = transform.TransformDirection(finalLv);
-
-        Debug.Log("AI 부스트 패드 코루틴 끝");
-
+               
         isBoosted = false;
     }
 
     IEnumerator SpeedUpRoutine(float force, float duration)
-    {
-        Debug.Log("AI 슬로프 시작");
+    {       
         Vector3 localVelocity = carRB.transform.InverseTransformDirection(carRB.velocity);
         localVelocity.z = Mathf.Max(localVelocity.z, force);
         carRB.velocity = transform.TransformDirection(localVelocity);
 
         yield return new WaitForSeconds(duration);
-
-        Debug.Log("AI 슬로프 종료");
-
+        
         isSpeedUp = false;
     }
 
