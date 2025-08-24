@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class BoostApplyer : MonoBehaviour
@@ -6,7 +6,6 @@ public class BoostApplyer : MonoBehaviour
   [Header("FX")]
   public BoostFX fx;
   public CarController controller;
-    public AICarController ai;
   [Header("Timing")]
   public float fadeTime = 0.15f;
 

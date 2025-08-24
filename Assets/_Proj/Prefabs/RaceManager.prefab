@@ -10,7 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 5575082491695480197}
   - component: {fileID: 4605979351777075164}
-  - component: {fileID: 5492076454586458402}
+  - component: {fileID: 500779955471748645}
+  - component: {fileID: 5042998027710762595}
   m_Layer: 0
   m_Name: RaceManager
   m_TagString: Untagged
@@ -51,7 +52,7 @@ MonoBehaviour:
   finalRank: []
   lapText: {fileID: 0}
   timeText: {fileID: 0}
---- !u!114 &5492076454586458402
+--- !u!114 &500779955471748645
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -63,5 +64,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd0649853b4a9454fb5c4cc16239eb97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  nameTexts: []
-  rankTexts: []
+  nameTexts:
+  - {fileID: 0}
+  - {fileID: 0}
+  rankTexts:
+  - {fileID: 0}
+  - {fileID: 0}
+--- !u!114 &5042998027710762595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2503231252392669312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db81ae3eaf05d1246a587592838d82be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
