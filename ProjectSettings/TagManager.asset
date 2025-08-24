@@ -13,7 +13,7 @@ TagManager:
   - AIPlayer
   - CheckPoint
   - Goal
-  - wall
+  - Wall
   layers:
   - Default
   - TransparentFX
