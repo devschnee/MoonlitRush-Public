@@ -1,4 +1,4 @@
-ï»¿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,7 +7,7 @@ public class AICarController : MonoBehaviour
     [Header("References")]
     [SerializeField] private Rigidbody carRB;
     [SerializeField] private Transform[] rayPoints;
-    [SerializeField] private LayerMask drivable;
+    [SerializeField] private LayerMask ground;   //drivable
     [SerializeField] private Transform accelerationPoint;
     [SerializeField] private GameObject[] tires = new GameObject[4];
     [SerializeField] private GameObject[] frontTireParent = new GameObject[2];
@@ -25,9 +25,9 @@ public class AICarController : MonoBehaviour
     [Header("AI Move")]
     public WaypointTest WaypointTest;
     private int currentWaypointIndex = 0;
-    private float targetSpeed; //ì›¨ì´í¬ì¸íŠ¸ìš©
-    [HideInInspector] public float moveInput = 0;
-    [HideInInspector] public float steerInput = 0;
+    private float targetSpeed; //¿şÀÌÆ÷ÀÎÆ®¿ë
+    [HideInInspector]public float moveInput = 0;
+    [HideInInspector]public float steerInput = 0;
 
     [Header("Car settings")]
     [SerializeField] private float acceleration = 25f;
@@ -38,7 +38,7 @@ public class AICarController : MonoBehaviour
     [SerializeField] private float dragCoefficient = 1f;
     [SerializeField] private float brakingDeceleration = 100f;
     //[SerializeField] private float brakingDragCoefficient = 0.5f;
-    //[SerializeField] private float driftingDragCoefficient = 0.1f; // ë“œë¦¬í”„íŠ¸ ì‹œ ì‚¬ì´ë“œ ë“œë˜ê·¸ ê³„ìˆ˜
+    //[SerializeField] private float driftingDragCoefficient = 0.1f; // µå¸®ÇÁÆ® ½Ã »çÀÌµå µå·¡±× °è¼ö
     private bool isDrifting = false;
 
     private Vector3 carLocalVelocity;
@@ -52,42 +52,38 @@ public class AICarController : MonoBehaviour
     [SerializeField] private float tireRotSpeed = 3000f;
     [SerializeField] private float maxSteeringAngle = 30f;
     [SerializeField] private float minSideSkidVel = 10f;
+   
 
-    [Header("Ray settings")] //ê°ì§€ ì„¤ì •
-    private float downDis = 2f;
-
-    [Header("Barrel Roll Settings")]
-    public float barrelRollTorque = 1000f; // ë°°ëŸ´ë¡¤ íšŒì „ë ¥ 250f, 
-    public float barrelRollDuration = 3f; //ë°°ëŸ´ë¡¤ ì§€ì† ì‹œê°„ 1.5f
-    bool isBarrelRolling = false;
-
-    //ìŠ¤í”¼ë“œ ë°œíŒ ë° ìŠ¬ë¡œí”„
-    bool isBoosted = false;
-    Coroutine boostCoroutine; //ìŠ¤í”¼ë“œ ë°œíŒ
-    bool isSpeedUp = false;
-    public float speedUpDuration = 2f;
-    public float downforce = 25f;
-    Coroutine speedUpCoroutine;
-
-    [Header("Drift")] //player ìŠ¤í¬ë¦½íŠ¸ì—ì„œ ê°€ì ¸ì˜´
+    [Header("Drift")] //player ½ºÅ©¸³Æ®¿¡¼­ °¡Á®¿È
     [SerializeField] private float driftDragMultiplier = 2f;
     [SerializeField] private float driftTransitionSpeed = 5f;
     private float currDragCoefficient;
 
-    public bool moveStart = false; //ê²Œì„ ì‹œì‘ ì‹œ ì›€ì§ì„ ë³€ìˆ˜
-    private FinalCount final; //ì™„ì£¼ ì‹œ ê²Œì„ ì¢…ë£Œ ì•Œë¦¬ëŠ” ì¹´ìš´íŠ¸ ìŠ¤í¬ë¦½íŠ¸
+    [Header("Recovery Settings")]
+    [SerializeField] private float stuckTimeThreshold = 1.5f; // ¸ØÃè´Ù°í ÆÇ´ÜÇÏ´Â ½Ã°£ (ÃÊ)
+    [SerializeField] private float recoveryTime = 1f;      // º¹±¸ ÈÄ ´Ù½Ã ¿òÁ÷ÀÌ´Â µô·¹ÀÌ
+    [SerializeField] private float rotationResetSpeed = 1f; // È¸Àü º¹±¸ ¼Óµµ
+
+    [Header("SpeedBoostPad")]
+    //½ºÇÇµå ¹ßÆÇ ¹× ½½·ÎÇÁ
+    bool isBoosted = false;
+    Coroutine boostCoroutine; //½ºÇÇµå ¹ßÆÇ
+    bool isSpeedUp = false;
+    public float speedUpDuration = 2f;
+    public float downforce = 60f;
+    public float forwardForce = 20f;
+    Coroutine speedUpCoroutine;
+
+    [Header("Etc")]
+    public bool moveStart = false; //°ÔÀÓ ½ÃÀÛ ½Ã ¿òÁ÷ÀÓ º¯¼ö
+    private FinalCount final; //¿ÏÁÖ ½Ã °ÔÀÓ Á¾·á ¾Ë¸®´Â Ä«¿îÆ® ½ºÅ©¸³Æ®
 
     public bool isInvincible = false;
-
-    [Header("Recovery Settings")]
-    [SerializeField] private float stuckTimeThreshold = 1.5f; // ë©ˆì·„ë‹¤ê³  íŒë‹¨í•˜ëŠ” ì‹œê°„ (ì´ˆ)
-    [SerializeField] private float recoveryTime = 1f;      // ë³µêµ¬ í›„ ë‹¤ì‹œ ì›€ì§ì´ëŠ” ë”œë ˆì´
-    [SerializeField] private float rotationResetSpeed = 1f; // íšŒì „ ë³µêµ¬ ì†ë„
 
     private Vector3 lastPosition;
     private float stuckTimer;
     private bool isRecovering = false;
-  public  bool isFinished = false;
+    public  bool isFinished = false;
     private void Start()
     {
         carRB = GetComponent<Rigidbody>();
@@ -98,41 +94,8 @@ public class AICarController : MonoBehaviour
     {
         if (moveStart == false) return;
 
-        if (WaypointTest == null || WaypointTest.Count == 0) return;
-
-        //raycast ì¤‘ì‹¬ì                       ì°¨ì²´ì˜ ì•ìª½ ë²”í¼ ê·¼ì²˜ì—ì„œ ë ˆì´ ì‹œì‘ ê¶Œì¥
-        Vector3 origin = transform.position + Vector3.up * 0.7f + transform.forward * 1.2f;
-        //ë‹¤ìš´ ë ˆì´
-        Debug.DrawRay(origin, Vector3.down * downDis, Color.blue);
-        bool isDown = Physics.Raycast(origin, Vector3.down, out RaycastHit downHit, downDis);
-
-        //if (isDown)
-        //{   //ìŠ¬ë¡œí”„ ê°ì§€
-
-        //    if (downHit.collider.CompareTag("SpeedUp"))
-        //    {
-        //        Debug.Log($"ìŠ¬ë¡œí”„ ê°ì§€. downforce: {downforce}");
-        //        carRB.AddForce(-transform.up * downforce, ForceMode.Acceleration);
-
-        //        StartCoroutine(SpeedUpRoutine());
-
-
-        //    }
-            //    //ë°°ëŸ´ë¡¤ ì í”„ëŒ€ ê°ì§€
-            //    else if (downHit.collider.CompareTag("Barrel"))
-            //    {
-            //        if (isBarrelRolling == false)
-            //        {
-            //            StartCoroutine(BarrelRollRoutine());
-            //            Debug.Log("ë°°ëŸ´ë¡¤ ì í”„ëŒ€");
-            //        }
-            //    }
-
-        //}
-        //else { lastSpeedUp = null; }
-
-
-
+        if (WaypointTest == null || WaypointTest.Count == 0) return;              
+       
         UpdateAIControls();
         Suspension();
         GroundCheck();
@@ -145,40 +108,38 @@ public class AICarController : MonoBehaviour
     }
 
     void UpdateAIControls()
-    {
-        Debug.Log("UpdateAIControls() is running.");
-
+    {        
         Vector3 target = WaypointTest.GetWaypoint(currentWaypointIndex).position;
-        Vector3 localTarget = transform.InverseTransformPoint(target); //InverseTransformPoint(): ì›”ë“œ ì¢Œí‘œë¥¼ í˜„ì¬ ì°¨ëŸ‰ì˜ ë¡œì»¬ ì¢Œí‘œê³„ë¡œ ë³€í™˜
+        Vector3 localTarget = transform.InverseTransformPoint(target); //InverseTransformPoint(): ¿ùµå ÁÂÇ¥¸¦ ÇöÀç Â÷·®ÀÇ ·ÎÄÃ ÁÂÇ¥°è·Î º¯È¯
 
-        //ì „ë°© ë ˆì´ìºìŠ¤íŠ¸
+        //Àü¹æ ·¹ÀÌÄ³½ºÆ®
         RaycastHit hit;
-        float rayDistance = 20f; // ë ˆì´ìºìŠ¤íŠ¸ ê±°ë¦¬
-        if (Physics.Raycast(transform.position, transform.forward, out hit, rayDistance, drivable))
+        float rayDistance = 3f; // ·¹ÀÌÄ³½ºÆ® °Å¸®
+        if (Physics.Raycast(transform.position, transform.forward, out hit, rayDistance, ground))
         {
-            if (hit.collider.CompareTag("Player")) // í”Œë ˆì´ì–´ íƒœê·¸ í™•ì¸
+            if (hit.collider.CompareTag("Player")) // ÇÃ·¹ÀÌ¾î ÅÂ±× È®ÀÎ
             {
-                Debug.Log("í”Œë ˆì´ì–´ ê°ì§€! íšŒí”¼ ë¡œì§ ì‹¤í–‰");
+                Debug.Log("ÇÃ·¹ÀÌ¾î °¨Áö! È¸ÇÇ ·ÎÁ÷ ½ÇÇà");
 
-                // í”Œë ˆì´ì–´ì˜ ìœ„ì¹˜ë¥¼ AI ì°¨ëŸ‰ì˜ ë¡œì»¬ ì¢Œí‘œë¡œ ë³€í™˜
+                // ÇÃ·¹ÀÌ¾îÀÇ À§Ä¡¸¦ AI Â÷·®ÀÇ ·ÎÄÃ ÁÂÇ¥·Î º¯È¯
                 Vector3 localPlayerPos = transform.InverseTransformPoint(hit.collider.transform.position);
 
-                // í”Œë ˆì´ì–´ê°€ AIì˜ ì™¼ìª½ì— ìˆëŠ”ì§€, ì˜¤ë¥¸ìª½ì— ìˆëŠ”ì§€ íŒë‹¨
+                // ÇÃ·¹ÀÌ¾î°¡ AIÀÇ ¿ŞÂÊ¿¡ ÀÖ´ÂÁö, ¿À¸¥ÂÊ¿¡ ÀÖ´ÂÁö ÆÇ´Ü
                 if (localPlayerPos.x < 0)
                 {
-                    // í”Œë ˆì´ì–´ê°€ ì™¼ìª½ì— ìˆìœ¼ë©´ ì˜¤ë¥¸ìª½ìœ¼ë¡œ íšŒí”¼
+                    // ÇÃ·¹ÀÌ¾î°¡ ¿ŞÂÊ¿¡ ÀÖÀ¸¸é ¿À¸¥ÂÊÀ¸·Î È¸ÇÇ
                     steerInput = 1.0f;
                 }
                 else
                 {
-                    // í”Œë ˆì´ì–´ê°€ ì˜¤ë¥¸ìª½ì— ìˆìœ¼ë©´ ì™¼ìª½ìœ¼ë¡œ íšŒí”¼
+                    // ÇÃ·¹ÀÌ¾î°¡ ¿À¸¥ÂÊ¿¡ ÀÖÀ¸¸é ¿ŞÂÊÀ¸·Î È¸ÇÇ
                     steerInput = -1.0f;
                 }
 
-                // ê°ì†
+                // °¨¼Ó
                 moveInput = 0.5f;
 
-                // íšŒí”¼ ë¡œì§ì´ ì‹¤í–‰ë  ë•ŒëŠ” ì›¨ì´í¬ì¸íŠ¸ ë¡œì§ì„ ë¬´ì‹œí•˜ë„ë¡ return; ì¶”ê°€
+                // È¸ÇÇ ·ÎÁ÷ÀÌ ½ÇÇàµÉ ¶§´Â ¿şÀÌÆ÷ÀÎÆ® ·ÎÁ÷À» ¹«½ÃÇÏµµ·Ï return; Ãß°¡
                 return;
             }
 
@@ -186,75 +147,69 @@ public class AICarController : MonoBehaviour
 
         }
 
-        //Waypointì˜ xë°©í–¥ ìœ„ì¹˜ì— ë”°ë¼ í•¸ë“¤ ë°©í–¥ ê³„ì‚°
+        //WaypointÀÇ x¹æÇâ À§Ä¡¿¡ µû¶ó ÇÚµé ¹æÇâ °è»ê
         steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f);
 
-        //ë‹¤ìŒ ì›¨ì´í¬ì¸íŠ¸ ê°„ì˜ ê°ë„ ê³„ì‚°
+        //´ÙÀ½ ¿şÀÌÆ÷ÀÎÆ® °£ÀÇ °¢µµ °è»ê
         Transform currentWP = WaypointTest.GetWaypoint(currentWaypointIndex);
         Transform nextWP = WaypointTest.GetWaypoint((currentWaypointIndex + 1) % WaypointTest.Count);
-        Vector3 toNext = (nextWP.position - currentWP.position).normalized;
+        Vector3 toNext = (nextWP.position - currentWP.position).normalized; //´ÙÀ½ ¿şÀÌÆ÷ÀÎÆ® °è»ê
         Vector3 toCar = (target - transform.position).normalized;
         float angleToNext = Vector3.Angle(transform.forward, toCar);
 
-        Debug.Log($"Current Angle: {angleToNext}, Current Speed: {currentSpeed}"); //ì½˜ì†”ì— ì°í˜ ê·¸ë ‡ë‹´ ë“œë¦¬í”„íŠ¸ ë¡œì§ì´ ë¬¸ì œë€ ì†Œë¦¬....
+        Debug.Log($"Current Angle: {angleToNext}, Current Speed: {currentSpeed}"); //ÄÜ¼Ö¿¡ ÀÌ»óÇÑ °ªÀÌ ÂïÈû ±×·¸´ã µå¸®ÇÁÆ® ·ÎÁ÷ÀÌ ¹®Á¦¶õ ¼Ò¸®...., ÇÈ½Ãµå ¾÷µ¥ÀÌÆ®¿¡¼­ µğ¹ö±× Âï´Â ÁßÀÌ¶ó °è¼Ó ³ª¿À´Â °Ô ´ç¿¬
 
-        currentSpeed = carRB.velocity.magnitude * 3.6f; //rigidbody ì†ë„(m/s)ë¥¼ km/hë¡œ ë³€í™˜               
+        currentSpeed = carRB.velocity.magnitude;               
 
-        if (angleToNext > 10f && currentSpeed > 50f && !isDrifting) //ê¸‰ì»¤ë¸Œ ë“œë¦¬í”„íŠ¸
+        if (angleToNext > 25f && currentSpeed > 20f || Mathf.Abs(carLocalVelocity.x) > 5f) //±ŞÄ¿ºê µå¸®ÇÁÆ®
         {
             isDrifting = true;
-            Debug.Log($"Drifting started! Angle: {angleToNext}, Speed: {currentSpeed}");
+            Debug.Log($"Drifting started! Angle: {angleToNext}, Speed: {currentSpeed}"); //ÀÌ°Ô ¿¬¼ÓÀ¸·Î ³ª¿À¸é ¹®Á¦ÀÖÀ½
         }
-        else if (angleToNext < 5f && isDrifting)
-        { //ì§ì„  êµ¬ê°„
+        else if (angleToNext < 18f && isDrifting && Mathf.Abs(carLocalVelocity.x) < 2f)
+        { //Á÷¼± ±¸°£
             isDrifting = false;
         }
 
-        //ì½”ë£¨í‹´ìœ¼ë¡œ barrelRoll ìƒíƒœê°€ trueë©´ AddRelativeTorque í•¨ìˆ˜ë¡œ ì°¨ëŸ‰ íšŒì „
-        if (isBarrelRolling)
+        
+         if (isDrifting)
         {
-            // carRB.AddRelativeTorque(Vector3.right * barrelRollTorque, ForceMode.Acceleration); //zì¶• ë°°ëŸ´ë¡¤ forward, xì¶• ë°°ëŸ´ë¡¤ right
-            carRB.AddRelativeTorque(Vector3.forward * barrelRollTorque, ForceMode.Acceleration);
-            steerInput = 0;
-            moveInput = 0;
-        }
-        else if (isDrifting)
-        {
-            // ë“œë¦¬í”„íŠ¸ ì¤‘ì—ëŠ” ì¡°í–¥ ê°•ë„ë¥¼ ë†’ì„            
-            steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f) * 5.5f;
-            moveInput = 0.5f;
-            // maxSpeed = 70f;
-
+            // µå¸®ÇÁÆ® Áß¿¡´Â Á¶Çâ °­µµ¸¦ ³ôÀÓ            
+            steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f) * 3.5f;
+            moveInput = 0.5f;         
+            
 
         }
-        else // ë“œë¦¬í”„íŠ¸ ì¤‘ì´ ì•„ë‹ ë•Œ, ì¼ë°˜ ì£¼í–‰ ë¡œì§ì„ ì‹¤í–‰
+        else // µå¸®ÇÁÆ® ÁßÀÌ ¾Æ´Ò ¶§, ÀÏ¹İ ÁÖÇà ·ÎÁ÷À» ½ÇÇà
         {
-            //ì¼ë°˜ ì£¼í–‰
+            //ÀÏ¹İ ÁÖÇà
             steerInput = Mathf.Clamp(localTarget.x / localTarget.magnitude, -1f, 1f);
             targetSpeed = maxSpeed;
 
             if (currentSpeed < targetSpeed)
             {
                 moveInput = 1f;
+                
             }
             else
-            {//ëª©í‘œ ì†ë„ì— ë„ë‹¬í•˜ë©´ ê°€ì†ì„ ë©ˆì¶”ê±°ë‚˜ í•„ìš” ì‹œ ê°ì†Œ
+            {//¸ñÇ¥ ¼Óµµ¿¡ µµ´ŞÇÏ¸é °¡¼ÓÀ» ¸ØÃß°Å³ª ÇÊ¿ä ½Ã °¨¼Ò
                 moveInput = 0f;
             }
-
-
         }
 
-
-        //ë‹¤ìŒ Waypoint í™•ì¸        
-        float distance = Vector3.Distance(transform.position, target);
-        if (distance < 10f)
-        {                                                  //ë§ˆì§€ë§‰ì— ë„ë‹¬í•˜ë©´ ë‹¤ì‹œ 0ë¶€í„° ì‹œì‘(ë£¨í”„)
+        //¿şÀÌÆ÷ÀÎÆ® Á¤¹æÇâÀ¸·Î
+        float dotWP = Vector3.Dot(transform.forward, toCar);
+        if (dotWP < 0f)
+        {
             currentWaypointIndex = (currentWaypointIndex + 1) % WaypointTest.Count;
         }
 
-        Debug.Log("UpdateAIControls() finished.");
-              
+        //´ÙÀ½ Waypoint È®ÀÎ        
+        float distance = Vector3.Distance(transform.position, target);
+        if (distance < 10f || dotWP < 0f)
+        {                                                  //¸¶Áö¸·¿¡ µµ´ŞÇÏ¸é ´Ù½Ã 0ºÎÅÍ ½ÃÀÛ(·çÇÁ)
+            currentWaypointIndex = (currentWaypointIndex + 1) % WaypointTest.Count;
+        }              
     }
 
     void Suspension()
@@ -264,7 +219,7 @@ public class AICarController : MonoBehaviour
             RaycastHit hit;
             float maxDistance = restLength;
 
-            if (Physics.Raycast(rayPoints[i].position, -rayPoints[i].up, out hit, maxDistance + wheelRadius, drivable))
+            if (Physics.Raycast(rayPoints[i].position, -rayPoints[i].up, out hit, maxDistance + wheelRadius, ground))
             {
                 wheelsIsGrounded[i] = 1;
 
@@ -382,9 +337,13 @@ public class AICarController : MonoBehaviour
 
     private void Movement()
     {
-        if (isBarrelRolling) return;
+        if (!isGrounded)
+        {
+            Air();
+        } 
         else if (isGrounded)
         {
+            Debug.Log("°øÁß Á¦¾î X, ÀÏ¹İ ÁÖÇà ½ÃÀÛ");
             Accelerate();
             Decelerate();
             Turn();
@@ -393,7 +352,7 @@ public class AICarController : MonoBehaviour
 
         void Accelerate()
         {
-            if (carLocalVelocity.z < targetSpeed) //ëª©í‘œ ì†ë„ì— ë”°ë¼ ê°€ì†
+            if (carLocalVelocity.z < targetSpeed) //¸ñÇ¥ ¼Óµµ¿¡ µû¶ó °¡¼Ó
             {
                 carRB.AddForceAtPosition(acceleration * moveInput * carRB.transform.forward, accelerationPoint.position, ForceMode.Acceleration);
             }
@@ -407,14 +366,14 @@ public class AICarController : MonoBehaviour
             {
                 carRB.AddForce(brakingDeceleration * -carRB.transform.forward, ForceMode.Acceleration);
             }
-            // AIëŠ” í‚¤ ì…ë ¥ ëŒ€ì‹  ì†ë„ì— ë”°ë¼ ê°ì†
+            // AI´Â Å° ÀÔ·Â ´ë½Å ¼Óµµ¿¡ µû¶ó °¨¼Ó
             else if (!isDrifting && carLocalVelocity.z > targetSpeed)
             {
                 carRB.AddForce(brakingDeceleration * -carRB.transform.forward, ForceMode.Acceleration);
             }
-            else if (Mathf.Abs(carLocalVelocity.z) > 0 && moveInput == 0) //moveinputì´ 0ì¼ ë•Œë§Œ ìì—° ê°ì†
+            else if (Mathf.Abs(carLocalVelocity.z) > 0 && moveInput == 0) //moveinputÀÌ 0ÀÏ ¶§¸¸ ÀÚ¿¬ °¨¼Ó
             {
-                // ê°€ì†í•˜ì§€ ì•Šì„ ë•Œ ìì—°ìŠ¤ëŸ¬ìš´ ê°ì†
+                // °¡¼ÓÇÏÁö ¾ÊÀ» ¶§ ÀÚ¿¬½º·¯¿î °¨¼Ó
                 carRB.AddForce(deceleration * carVelocityRatio * -carRB.transform.forward, ForceMode.Acceleration);
             }
         }
@@ -426,24 +385,32 @@ public class AICarController : MonoBehaviour
 
         void SidewaysDrag()
         {
-            float currentSidewaysSpeed = carLocalVelocity.x;
-            //float dragMagnitude;
-            //if (isDrifting)
-            //{
-            //    dragMagnitude = -currentSidewaysSpeed * driftingDragCoefficient;
-            //}
-            //else
-            //{
-            //    dragMagnitude = -currentSidewaysSpeed * (currentSpeed > targetSpeed ? brakingDragCoefficient : dragCoefficient); //ì½”ë„ˆë§ ì‹œ ì˜†ìœ¼ë¡œ ë¯¸ë„ëŸ¬ì§€ëŠ” í˜„ìƒì„ ë” ê°•í•˜ê²Œ ì œì–´. ê°ì†ê³¼ ë™ì‹œì— ì½”ë„ˆë§ ì•ˆì •ì„±ì„ ë†’ì´ëŠ” ì—­í• 
-            //}
+            float currentSidewaysSpeed = carLocalVelocity.x;            
 
             float targetDrag = isDrifting ? dragCoefficient / driftDragMultiplier : dragCoefficient;
             currDragCoefficient = Mathf.Lerp(currDragCoefficient, targetDrag, Time.deltaTime * driftTransitionSpeed);
-            float dragMagnitude = -currentSidewaysSpeed * dragCoefficient;
+            float dragMagnitude = -currentSidewaysSpeed * currDragCoefficient;
 
 
             Vector3 dragForce = carRB.transform.right * dragMagnitude;
             carRB.AddForceAtPosition(dragForce, carRB.worldCenterOfMass, ForceMode.Acceleration);
+        }
+
+        void Air()
+        {
+            Debug.Log("°øÁß Á¦¾î");
+            steerInput = 0;
+            moveInput = 0;            
+            carRB.angularVelocity *= 0.9f;
+            //¼öÁ÷
+            //Vector3 velo = carRB.velocity;
+            //velo.y *= 0.8f;
+            //carRB.velocity = velo;
+            carRB.AddForce(Vector3.down * 25f);
+
+            //¼öÆò À¯µµ
+            Quaternion targetPos = Quaternion.Euler(0, carRB.transform.eulerAngles.y, 0);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetPos, Time.fixedDeltaTime * 1.2f);
         }
     }
     
@@ -460,8 +427,12 @@ public class AICarController : MonoBehaviour
             {
                 StopCoroutine(boostCoroutine);
             }
+            if (boostApplyer != null)
+            {
+                boostApplyer.ApplyBoost(2f, 1f, 2f);
+            }
 
-            boostCoroutine = StartCoroutine(BoostRoutine(20, 3f));
+            boostCoroutine = StartCoroutine(BoostRoutine(50, 1.5f));
         }
         else if (other.CompareTag("SpeedUp"))
         {        
@@ -471,68 +442,53 @@ public class AICarController : MonoBehaviour
             {               
                 StopCoroutine (speedUpCoroutine);
             }
-            carRB.AddForce(transform.forward * downforce, ForceMode.Acceleration);
-            speedUpCoroutine = StartCoroutine(SpeedUpRoutine(150, 3f));
+            if (boostApplyer != null)
+            {
+                boostApplyer.ApplyBoost(2f, 1f, 2f);
+            }
+
+            carRB.AddForce((transform.forward * forwardForce), ForceMode.Acceleration);
+            carRB.AddForce(Vector3.down * downforce, ForceMode.Acceleration);
+            speedUpCoroutine = StartCoroutine(SpeedUpRoutine(50, 1.5f));
         }
         else if (other.CompareTag("Goal"))
         {
-            isFinished = true;   
-            StopAllCoroutines();
-            Debug.Log("ì™„ì£¼!");
-            moveInput = 0;
-            steerInput = 0;
-                       
-            carRB.drag = 20;
-            carRB.angularDrag = 20;
-            carRB.isKinematic = true;
-            final.FinishAI();
-        }
+            if (isFinished) return;
 
+            StartCoroutine(SmoothStop(2f));
+            //FinalCount.Instance.FinishAI();
+            Debug.Log("¿ÏÁÖ!");           
+        }
     }
 
     IEnumerator BoostRoutine(float force, float duration)
     {
-        Debug.Log("AI ìŠ¤í”¼ë“œ íŒ¨ë“œ ì½”ë£¨í‹´ ì‹œì‘");
-        maxSpeed += force;
+        Debug.Log("AI ºÎ½ºÆ® ÆĞµå ÄÚ·çÆ¾ ½ÃÀÛ");
+        Vector3 localVelocity = carRB.transform.InverseTransformDirection(carRB.velocity); //ÇöÀç¼Óµµ¸¦ °­Á¦·Î ²ø¾î¿Ã¸²
+        localVelocity.z = Mathf.Max(localVelocity.z, force);
+        carRB.velocity = transform.TransformDirection(localVelocity);
         yield return new WaitForSeconds(duration);
 
-        Debug.Log("AI ìŠ¤í”¼ë“œ íŒ¨ë“œ ì½”ë£¨í‹´ ë");
-        maxSpeed -= force;
+        Debug.Log("AI ºÎ½ºÆ® ÆĞµå ÄÚ·çÆ¾ ³¡");
+        
         isBoosted = false;
-    }
-
-    //ë°°ëŸ´ë¡¤ ì½”ë£¨í‹´
-    //IEnumerator BarrelRollRoutine()
-    //{
-    //    isBarrelRolling = true;
-    //    Debug.Log("AI ë°°ëŸ´ë¡¤ ì‹œì‘");
-    //    //carRB.useGravity = false;        
-    //    // carRB.AddRelativeTorque(Vector3.forward * barrelRollTorque, ForceMode.Acceleration);
-
-    //    yield return new WaitForSeconds(barrelRollDuration); //íšŒì „ ì‹œê°„ 
-
-    //    isBarrelRolling = false;
-    //    Debug.Log("AI ë°°ëŸ´ë¡¤ ì¢…ë£Œ");
-    //    //carRB.useGravity = true;
-
-    //    moveInput = 1f;
-
-    //}
+    }        
 
     IEnumerator SpeedUpRoutine(float force, float duration)
     {        
-        Debug.Log("AI ìŠ¬ë¡œí”„ ì‹œì‘");
-        maxSpeed += force;
+        Debug.Log("AI ½½·ÎÇÁ ½ÃÀÛ");
+        Vector3 localVelocity = carRB.transform.InverseTransformDirection(carRB.velocity);
+        localVelocity.z = Mathf.Max(localVelocity.z, force);
+        carRB.velocity = transform.TransformDirection(localVelocity);
 
         yield return new WaitForSeconds(duration);
 
-        Debug.Log("AI ìŠ¬ë¡œí”„ ì¢…ë£Œ");
-        maxSpeed -= force;
+        Debug.Log("AI ½½·ÎÇÁ Á¾·á");
+        
         isSpeedUp = false;
-
     }
 
-    public IEnumerator HitByMissileCoroutine()
+    public IEnumerator HitByMissileCoroutine() //¹Ì»çÀÏ °ø°İ ¹ŞÀ» ½Ã ÄÚ·çÆ¾
     {
         if (isInvincible) yield break;
 
@@ -548,7 +504,7 @@ public class AICarController : MonoBehaviour
 
     private void OnCollisionEnter(Collision other)
     {
-        //í”Œë ˆì´ì–´ì™€ ì¶©ëŒ ìˆœê°„ ë°˜ì‘
+        //ÇÃ·¹ÀÌ¾î¿Í Ãæµ¹ ¼ø°£ ¹İÀÀ
         if (other.collider.CompareTag("Player"))
         {
             StabilizeAfterHit();
@@ -557,16 +513,16 @@ public class AICarController : MonoBehaviour
 
     void StabilizeAfterHit()
     {
-        carRB.angularVelocity *= 0.3f; //íšŒì „ì†ë„: ì°¨ëŸ‰ í”ë“¤ë¦¼ ì¡°ì ˆ
+        carRB.angularVelocity *= 0.3f; //È¸Àü¼Óµµ: Â÷·® Èçµé¸² Á¶Àı
 
-        Vector3 localVel = transform.InverseTransformDirection(carRB.velocity); //ì†ë„ë¥¼ ì°¨ëŸ‰ ë¡œì»¬ ì¢Œí‘œê³„ë¡œ ë°”ê¿ˆ
-        localVel.x *= 0.5f; //ì°¨ëŸ‰ íŠ•ê¸°ëŠ” ë°©í–¥ ì¡°ì ˆ
-        carRB.velocity = transform.TransformDirection(localVel); //ë¡œì»¬ ì¢Œí‘œê³„ë¥¼ ì›”ë“œ ì¢Œí‘œê³„ ì†ë„ë¡œ ë°”ê¿ˆ
+        Vector3 localVel = transform.InverseTransformDirection(carRB.velocity); //¼Óµµ¸¦ Â÷·® ·ÎÄÃ ÁÂÇ¥°è·Î ¹Ù²Ş
+        localVel.x *= 0.5f; //Â÷·® Æ¨±â´Â ¹æÇâ Á¶Àı
+        carRB.velocity = transform.TransformDirection(localVel); //·ÎÄÃ ÁÂÇ¥°è¸¦ ¿ùµå ÁÂÇ¥°è ¼Óµµ·Î ¹Ù²Ş
 
         StartCoroutine(TemporaryStabilize());
     }
 
-    //ì¼ì‹œì  ì•ˆì •í™” ì½”ë£¨í‹´
+    //ÀÏ½ÃÀû ¾ÈÁ¤È­ ÄÚ·çÆ¾
     IEnumerator TemporaryStabilize()
     {
         float originalDrag = carRB.drag;
@@ -584,7 +540,7 @@ public class AICarController : MonoBehaviour
     void CheckForStuck()
     {
         if(isFinished) return;
-        // ì°¨ëŸ‰ì´ ì›€ì§ì´ëŠ”ì§€ í™•ì¸
+        // Â÷·®ÀÌ ¿òÁ÷ÀÌ´ÂÁö È®ÀÎ
         if (Vector3.Distance(transform.position, lastPosition) < 0.1f)
         {
             stuckTimer += Time.deltaTime;
@@ -595,36 +551,36 @@ public class AICarController : MonoBehaviour
         }
         lastPosition = transform.position;
 
-        // ì¼ì • ì‹œê°„ ì´ìƒ ë©ˆì¶° ìˆì—ˆë‹¤ë©´ ë³µêµ¬ ë£¨í‹´ì„ ì‹œì‘
+        // ÀÏÁ¤ ½Ã°£ ÀÌ»ó ¸ØÃç ÀÖ¾ú´Ù¸é º¹±¸ ·çÆ¾À» ½ÃÀÛ
         if (stuckTimer >= stuckTimeThreshold && !isRecovering)
         {
             StartCoroutine(RespawnToNearestWaypoint());
         }
     }
 
-    // ì°¨ëŸ‰ì´ ë’¤ì§‘í˜”ëŠ”ì§€ í™•ì¸
+    // Â÷·®ÀÌ µÚÁıÇû´ÂÁö È®ÀÎ
     void CheckForFlip()
     {
-        // ì°¨ì˜ 'ìœ„' ë°©í–¥(transform.up)ì´ ì›”ë“œ 'ìœ„' ë°©í–¥(Vector3.up)ê³¼ ë°˜ëŒ€ì´ë©´ ë’¤ì§‘íŒ ê²ƒìœ¼ë¡œ ê°„ì£¼
+        // Â÷ÀÇ 'À§' ¹æÇâ(transform.up)ÀÌ ¿ùµå 'À§' ¹æÇâ(Vector3.up)°ú ¹İ´ëÀÌ¸é µÚÁıÈù °ÍÀ¸·Î °£ÁÖ
         if (Vector3.Dot(transform.up, Vector3.up) < 0.5f && !isRecovering)
         {
             StartCoroutine(RespawnToNearestWaypoint());
         }
     }
    
-    // ë³µêµ¬ ë£¨í‹´ ì½”ë£¨í‹´: ì›¨ì´í¬ì¸íŠ¸ ê¸°ì¤€ ë¦¬ìŠ¤í°
+    // º¹±¸ ·çÆ¾ ÄÚ·çÆ¾: ¿şÀÌÆ÷ÀÎÆ® ±âÁØ ¸®½ºÆù
     IEnumerator RespawnToNearestWaypoint()
     {
-
-
         isRecovering = true;              
 
         Transform nearest = null;
         float minDist = Mathf.Infinity;
-        for (int i = 0; i < WaypointTest.Count; i++) //ê°€ê¹Œìš´ ì›¨ì´í¬ì¸íŠ¸ íƒìƒ‰
+        for (int i = 0; i < WaypointTest.Count; i++) //°¡±î¿î ¿şÀÌÆ÷ÀÎÆ® Å½»ö
         {
+           float dot = Vector3.Dot(transform.forward, (WaypointTest.GetWaypoint(i).position - transform.position).normalized);
             float dist = Vector3.Distance(transform.position, WaypointTest.GetWaypoint(i).position);
-            if (dist < minDist)
+            
+            if (dist < minDist && dot > 0f)
             {
                 minDist = dist;
                 nearest = WaypointTest.GetWaypoint(i);
@@ -634,13 +590,41 @@ public class AICarController : MonoBehaviour
 
         if (nearest != null)
         {
-            transform.position = nearest.position + Vector3.up * 1f; //ë¦¬ìŠ¤í° ì§€ì 
+            transform.position = nearest.position + Vector3.up * 1f; //¸®½ºÆù ÁöÁ¡
             transform.rotation = Quaternion.LookRotation(nearest.forward);
             carRB.velocity = Vector3.zero;
-            carRB.angularVelocity = Vector3.zero;
+            carRB.angularVelocity = Vector3.zero;           
         }
-
+               
         yield return new WaitForSeconds(recoveryTime);
         isRecovering = false;
+        
+        
+    }
+
+    public IEnumerator SmoothStop(float duration = 1.5f)
+    {
+        isFinished = true;
+
+        // ¿¢¼¿Àº Áï½Ã ¸·°í, ÇÚµéÀº °è¼Ó »ì¾Æ ÀÖ°Ô µÒ
+        moveInput = 0;
+
+        float timer = 0f;
+        Vector3 initVel = carRB.velocity;
+        Vector3 initAngularVel = carRB.angularVelocity;
+
+        while (timer < duration)
+        {
+            float t = timer / duration;
+
+            carRB.velocity = Vector3.Lerp(initVel, Vector3.zero, t);
+            carRB.angularVelocity = Vector3.Lerp(initAngularVel, Vector3.zero, t);
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        carRB.velocity = Vector3.zero;
+        carRB.angularVelocity = Vector3.zero;
     }
 }

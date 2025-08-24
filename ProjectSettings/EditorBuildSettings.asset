@@ -9,9 +9,9 @@ EditorBuildSettings:
     path: Assets/_Proj/Scenes/Lobby.unity
     guid: 62b7a22f80e954b4ab443362afccf152
   - enabled: 1
-    path: Assets/_Proj/Scenes/SampleScene.unity
+    path: Assets/_Proj/Scenes/Game.unity
     guid: 51aa118d6883c844a974f3739ce65768
   - enabled: 1
-    path: Assets/_Proj/Scenes/EndingTest.unity
-    guid: 45445fe23068b6842b052d60b39cbe47
+    path: Assets/_Proj/Scenes/Ending.unity
+    guid: d4505545cd5746646b5fd3c8953094f2
   m_configObjects: {}
