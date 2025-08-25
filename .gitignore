@@ -104,3 +104,5 @@ InitTestScene*.unity*
 Assets/_Proj/_NotShared.meta
 /[Aa]ssets/Plugins/
 /[Aa]ssets/Plugins.meta
+/[Aa]ssets/Resources/
+/[Aa]ssets/Resources.meta
