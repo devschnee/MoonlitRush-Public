@@ -81,6 +81,11 @@ public class IntroWaypointCamera : MonoBehaviour
 
   bool introActive = true;
 
+  [Header("Audio Handoff")]
+  public AudioSource cameraAudio;              // 메인 카메라에 있는 BGM/환경음 소스 등
+  [Range(0f, 1f)] public float postIntroCamVolume = 0.5f;
+  public bool mutePlayerEngineDuringIntro = true;
+
   void Reset()
   {
     if (!vcamIntro) vcamIntro = GetComponent<CinemachineVirtualCamera>();
@@ -125,6 +130,26 @@ public class IntroWaypointCamera : MonoBehaviour
     // UI/Fade 초기화
     SetUIVisible(false);
     SetFadeAlpha(0f);
+
+    if (!cameraAudio)
+    {
+      var cam = Camera.main;
+      if (cam) cameraAudio = cam.GetComponent<AudioSource>();
+      if (!cameraAudio && vcamIntro) cameraAudio = vcamIntro.GetComponent<AudioSource>();
+      if (!cameraAudio && vcamPlayer) cameraAudio = vcamPlayer.GetComponent<AudioSource>();
+    }
+
+    // ⭐ 인트로 시작 전에 엔진음 반드시 뮤트
+    if (mutePlayerEngineDuringIntro)
+    {
+      var target = player;
+      if (target == null)
+      {
+        var p = FindObjectsOfType<RacerInfo>(true).FirstOrDefault(r => r.isPlayer);
+        if (p) target = p.GetComponent<CarController>();
+      }
+      target?.SetEngineMute(true, stopIfMuting: true);
+    }
   }
 
   void Start()
@@ -281,6 +306,14 @@ public class IntroWaypointCamera : MonoBehaviour
   // 인트로 종료: (필요시 추가 페이드) → UI 켜기 → VCam 우선순위 스왑 → StartCount → 페이드인
   IEnumerator OnIntroEndFlow()
   {
+    if (cameraAudio) cameraAudio.volume = postIntroCamVolume;
+    if (player == null)
+    {
+      var p = FindObjectsOfType<RacerInfo>(true).FirstOrDefault(r => r.isPlayer);
+      if (p) player = p.GetComponent<CarController>();
+    }
+    player?.SetEngineMute(false, stopIfMuting: false, restartIfUnmuted: true);
+
     // 리드 페이드를 안 썼다면 여기서 어둡게 + 임계치에서 핸드오프
     if (screenFade && !startedLeadFade)
       yield return StartCoroutine(FadeTo(screenFade, 1f, fadeDuration, monitorForHandoff: handoffOnFadeOut));

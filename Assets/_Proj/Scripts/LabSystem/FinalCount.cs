@@ -26,8 +26,14 @@ public class FinalCount : MonoBehaviour
 
   bool isGameEnding;
 
-  public AudioSource source;
-  public AudioClip clip;
+  // ====== Audio ======
+  [Header("Audio")]
+  public AudioSource sfxSource;          // 카운트다운 동안 계속 울릴 SFX 재생기
+  public AudioClip finalLoopClip;        // 카운트다운 10초 동안 루프로 재생할 클립
+  public AudioSource bgmSource;          // 카메라(또는 BGM용) AudioSource
+  [Range(0f, 1f)] public float bgmDimVolume = 0.35f; // 파이널 중에 줄일 볼륨
+  [Min(0f)] public float bgmFadeTime = 0.3f;        // 페이드 시간
+  public AudioClip finishStinger;        // ("Finish!")에 한 번만 틀 간단한 스팅어
 
   void Awake()
   {
@@ -50,7 +56,16 @@ public class FinalCount : MonoBehaviour
 
   IEnumerator CoFinal(int sec, RacerInfo winner)
   {
-    source.PlayOneShot(clip);
+    // BGM 볼륨 살짝 낮추기
+    StartCoroutine(FadeAudio(bgmSource, bgmDimVolume, bgmFadeTime));
+
+    // 카운트다운 동안 오디오 루프
+    if (sfxSource && finalLoopClip)
+    {
+      sfxSource.loop = true;
+      sfxSource.clip = finalLoopClip;
+      sfxSource.Play();
+    }
     if (finalCountText) finalCountText.gameObject.SetActive(true);
 
     for (int i = sec; i > 0; i--)
@@ -60,6 +75,9 @@ public class FinalCount : MonoBehaviour
     }
 
     if (finalCountText) finalCountText.text = "Finish!";
+    if (sfxSource && sfxSource.isPlaying) sfxSource.Stop(); // 루프 종료
+    if (sfxSource && finishStinger) sfxSource.PlayOneShot(finishStinger);
+
     yield return new WaitForSecondsRealtime(1f);
 
     if (endFade) StartCoroutine(FadeTo(endFade, 0f, 0.25f));
@@ -88,7 +106,22 @@ public class FinalCount : MonoBehaviour
 
     if (car){ car.isFinished = true; car.moveInput = 0f;}
     if (ai) { ai.isFinished = true; ai.moveInput = 0f; }
-    
+    if (car)
+    {
+      car.BeginFinishSequence(duration, lockControl);
+      yield break;
+    }
+    if (ai)
+    {
+      yield return ai.SmoothStop(duration);
+      if (lockControl)
+      {
+        ai.moveStart = false;
+        ai.enabled = false;
+        if (rb) rb.isKinematic = true;
+      }
+      yield break;
+    }
     // 시작값 캐시해서 매 프레임 부드럽게 Lerp
     float t = 0f;
     Vector3 v0 = rb ? rb.velocity : Vector3.zero;
@@ -136,6 +169,21 @@ public class FinalCount : MonoBehaviour
     cg.alpha = target;
     cg.blocksRaycasts = visible;
     cg.interactable = visible;
+  }
+
+  IEnumerator FadeAudio(AudioSource src, float target, float dur)
+  {
+    if (!src) yield break;
+    if (dur <= 0f) { src.volume = target; yield break; }
+
+    float start = src.volume, t = 0f;
+    while (t < 1f)
+    {
+      t += Time.unscaledDeltaTime / Mathf.Max(0.0001f, dur);
+      src.volume = Mathf.Lerp(start, target, t);
+      yield return null;
+    }
+    src.volume = target;
   }
 
   void OnFinalCountdownDone()

@@ -33,6 +33,9 @@ public class CarController : MonoBehaviour
   int[] wheelIsGrounded = new int[4];
   bool isGrounded = false;
   public bool isFinished;
+  bool hardLocked = false;
+  bool isFinishing = false;
+
   public bool isInvincible { get; set; }
 
   [Header("Reverse")]
@@ -122,18 +125,17 @@ public class CarController : MonoBehaviour
   #region Audio Settings
   [Header("Audio")]
   [SerializeField] private AudioSource engineSound;
-  [SerializeField]
-  [Range(0, 1)] private float minPitch = 1f;
-  [SerializeField]
-  [Range(1, 5)] private float maxPitch = 5f;
-  // ================== GEAR ==================
-  [SerializeField] private AudioClip gearShiftSound;
-  [SerializeField, Range(0, 1)] private float shiftSoundVol = 0.7f;
-  [SerializeField] private bool usePitchDip = true;
-  [SerializeField, Range(0.3f, 1)] private float shiftPitchDiip = 0.75f; // 속도 내려갈때 피치 비율
-  [SerializeField] private float shiftPitchDipTime = 0.06f;
-  [SerializeField] private float shiftPitchRiseTime = 0.12f;
+  // 피치 파라미터
+  [SerializeField, Range(0.1f, 4f)] private float minPitch = 0.5f;
+  [SerializeField, Range(0.1f, 4f)] private float basePitch = 1.0f;  // 평상시
+  [SerializeField, Range(0.1f, 4f)] private float maxPitch = 3.0f;  // 변속 시 피크
+
+  // 변속 피치 연출
+  [SerializeField] private float shiftBurstUpTime = 0.06f;  // 3까지 올라가는 시간
+  [SerializeField] private float shiftBurstHoldTime = 0.05f;  // 정점 유지 시간
+  [SerializeField] private float shiftBurstDownTime = 0.12f;  // 1로 내려오는 시간
   private bool shiftingPitch = false;
+
   // ================== Skid ==================
   [SerializeField] private AudioSource skidSound;
   [SerializeField] float skidStartSlip = 2.0f; // 이 이상이면 소리 시작(m/s)
@@ -147,11 +149,23 @@ public class CarController : MonoBehaviour
   {
     rb = GetComponent<Rigidbody>();
     ApplyStats(stats);
+    // ⭐ 엔진 오디오 시작값 강제: 인트로 전에는 항상 꺼둠
+    if (engineSound == null) engineSound = GetComponent<AudioSource>();
+    if (engineSound != null)
+    {
+      engineSound.loop = true;
+      engineSound.playOnAwake = false; // 씬 시작 즉시 재생 방지
+      engineSound.mute = true;         // 인트로 중엔 항상 뮤트
+      engineSound.Stop();              // 혹시 재생 중이면 정지
+    }
+    if (engineSound) engineSound.pitch = basePitch;
   }
+
+
 
   void Update()
   {
-    if(isFinished) return;
+    if (hardLocked) return;
     GetPlayerInput();
     currSpeed = rb.velocity.magnitude;
     EngineSound();
@@ -159,11 +173,6 @@ public class CarController : MonoBehaviour
 
   void FixedUpdate()
   {
-    //if (Time.frameCount % 60 == 0)
-    //{
-    //  Debug.Log($"[{name}] lv.z={currCarLocalVel.z:F2}, gear={currGear}, " +
-    //            $"Accel={acceleration}, RL={tires[2].name}, RR={tires[3].name}");
-    //}
     Suspension();
     GroundCheck();
 
@@ -428,35 +437,121 @@ public class CarController : MonoBehaviour
   #region Audio
   void EngineSound()
   {
-    if (engineSound == null || shiftingPitch) return;
-    float t = Mathf.InverseLerp(0f, maxSpeed, Mathf.Abs(currCarLocalVel.z));
-    engineSound.pitch = Mathf.Lerp(minPitch, maxPitch, t);
+    if (engineSound == null) return;
+
+    if (shiftingPitch) return;
+
+    engineSound.pitch = basePitch;
   }
-  IEnumerator ShiftAudioBlip()
+  IEnumerator ShiftPitchBurst()
   {
     if (engineSound == null) yield break;
     shiftingPitch = true;
-    float start = engineSound.pitch;
-    float target = MathF.Max(0.1f, start * shiftPitchDiip);
 
+    float start = Mathf.Max(minPitch, engineSound.pitch);
+    float peak = Mathf.Max(basePitch, maxPitch);
+
+    // ↑ 올라가기
     float t = 0f;
-    while (t < shiftPitchDipTime)
+    while (t < shiftBurstUpTime)
     {
       t += Time.deltaTime;
-      engineSound.pitch = Mathf.Lerp(start, target, t / shiftPitchDipTime);
+      engineSound.pitch = Mathf.Lerp(start, peak, t / Mathf.Max(0.0001f, shiftBurstUpTime));
       yield return null;
     }
+    engineSound.pitch = peak;
 
+    // 정점 유지
+    if (shiftBurstHoldTime > 0f)
+      yield return new WaitForSeconds(shiftBurstHoldTime);
+
+    // ↓ 내려오기 (basePitch=1.0으로)
     t = 0f;
-    while (t < shiftPitchRiseTime)
+    while (t < shiftBurstDownTime)
     {
       t += Time.deltaTime;
-      engineSound.pitch = Mathf.Lerp(target, start, t / shiftPitchRiseTime);
+      engineSound.pitch = Mathf.Lerp(peak, basePitch, t / Mathf.Max(0.0001f, shiftBurstDownTime));
       yield return null;
     }
+    engineSound.pitch = basePitch;
+
     shiftingPitch = false;
   }
 
+  public void SetEngineMute(bool mute, bool stopIfMuting = true, bool restartIfUnmuted = true)
+  {
+    if (!engineSound) return;
+    engineSound.mute = mute;
+
+    if (mute && stopIfMuting && engineSound.isPlaying)
+      engineSound.Stop();
+
+    // 인트로 끝나고 뮤트 해제 시 재생 보장
+    if (!mute && restartIfUnmuted && engineSound.clip != null && !engineSound.isPlaying)
+      engineSound.Play();
+  }
+
+  public void BeginFinishSequence(float duration = 1.5f, bool hardLockAfter = true)
+  {
+    if (isFinishing) return;
+    StartCoroutine(FinishRoutine(duration, hardLockAfter));
+  }
+
+  IEnumerator FinishRoutine(float duration, bool hardLockAfter)
+  {
+    isFinishing = true;
+    isFinished = true;   // 조작 차단 의도 플래그
+    moveInput = 0f;     // 엑셀 입력 즉시 차단
+
+    Vector3 v0 = rb.velocity;
+    Vector3 w0 = rb.angularVelocity;
+
+    float vol0 = (engineSound ? engineSound.volume : 0f);
+    float pitch0 = (engineSound ? engineSound.pitch : basePitch);
+
+    float t = 0f;
+    while (t < duration)
+    {
+      float k = t / Mathf.Max(0.0001f, duration);
+
+      // 물리 감속
+      rb.velocity = Vector3.Lerp(v0, Vector3.zero, k);
+      rb.angularVelocity = Vector3.Lerp(w0, Vector3.zero, k);
+
+      // 엔진음도 같이 가라앉기(피치는 minPitch쪽으로, 볼륨은 0으로)
+      if (engineSound)
+      {
+        engineSound.pitch = Mathf.Lerp(pitch0, minPitch, k);
+        engineSound.volume = Mathf.Lerp(vol0, 0f, k);
+        if (!engineSound.isPlaying) engineSound.Play();
+      }
+
+      t += Time.unscaledDeltaTime;
+      yield return null;
+    }
+
+    // 최종 정지
+    rb.velocity = Vector3.zero;
+    rb.angularVelocity = Vector3.zero;
+
+    // 엔진음 정리
+    if (engineSound)
+    {
+      engineSound.Stop();
+      engineSound.pitch = basePitch; // 다음 레이스 대비 복구
+      engineSound.volume = vol0;
+    }
+
+    isFinishing = false;
+
+    if (hardLockAfter)
+    {
+      // 이후 입력/업데이트 완전 차단
+      hardLocked = true;
+      rb.isKinematic = true;
+      enabled = false; // CarController 비활성
+    }
+  }
   float CalcLateralSpeed()
   {
     Vector3 vPlanar = Vector3.ProjectOnPlane(rb.velocity, transform.up);
@@ -583,11 +678,10 @@ public class CarController : MonoBehaviour
         currGear = Mathf.Min(currGear + 1, max);
         print($"기어 올림 {currGear}");
         isHoldingTop = false;
-
         if (engineSound != null)
         {
-          if (gearShiftSound != null) engineSound.PlayOneShot(gearShiftSound, shiftSoundVol);
-          if (usePitchDip) StartCoroutine(ShiftAudioBlip());
+          //if (gearShiftSound != null) engineSound.PlayOneShot(gearShiftSound, shiftSoundVol);
+          StartCoroutine(ShiftPitchBurst());
         }
       }
     }
@@ -759,7 +853,8 @@ public class CarController : MonoBehaviour
       {
         if (isFinished) return;
 
-        StartCoroutine(SmoothStop(2f));
+        BeginFinishSequence(1.5f, false);
+        //StartCoroutine(SmoothStop(2f));
         FinalCount.Instance.Finish();
       }
     }

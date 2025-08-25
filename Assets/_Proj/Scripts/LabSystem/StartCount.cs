@@ -46,10 +46,12 @@ public class StartCount : MonoBehaviour
     for (int i = seconds; i > 0; i--)
     {
       if (startCountText) startCountText.text = i.ToString();
+      mainSource.PlayOneShot(countClip);
       yield return new WaitForSecondsRealtime(1f);
     }
 
     if (startCountText) startCountText.text = "GO!";
+    mainSource.PlayOneShot(startClip);
     yield return new WaitForSecondsRealtime(goHold);
 
     // 인트로가 있으면 인트로에게 해제/타이머 시작을 맡긴다
