@@ -68,17 +68,8 @@ public class FinalCount : MonoBehaviour
     }
     yield return new WaitForSecondsRealtime(Mathf.Max(0.2f, othersSlowDuration * 0.6f));
 
-    //    TimeManager.Instance?.StopTimer();
-    //if (TimeManager.Instance != null)
-    //{
-    //  RaceDataStore.RankingData = TimeManager.Instance.GetRanking();
-    //}
-    //else
-    //{
-    //  Debug.LogWarning("TimeManager 인스턴스를 찾을 수 없어 랭킹을 저장할 수 없습니다.");
-    //}
-
-    //if (endFade) yield return FadeTo(endFade, 1f, endFadeDuration);
+    if (endFade) endFade.gameObject.SetActive(true);
+    if (endFade) yield return FadeTo(endFade, 1f, endFadeDuration);
     OnFinalCountdownDone();
     LoadEndingSceneSafe();
   }
@@ -101,7 +92,7 @@ public class FinalCount : MonoBehaviour
     Vector3 w0 = rb ? rb.angularVelocity : Vector3.zero;
     while (t < duration)
     {
-
+      if (!rb) break;
       if (rb)
       {
         float k = (duration <= 0f) ? 1f : t / duration;
@@ -125,10 +116,14 @@ public class FinalCount : MonoBehaviour
   IEnumerator FadeTo(CanvasGroup cg, float target, float dur)
   {
     if (!cg) yield break;
+
+    bool visible = target > 0.001f;
+    cg.blocksRaycasts = visible;
+    cg.interactable = visible;
+
     if (dur <= 0f) { cg.alpha = target; yield break; }
 
     float start = cg.alpha, t = 0f;
-    cg.blocksRaycasts = true;
     while (t < 1f)
     {
       t += Time.unscaledDeltaTime / Mathf.Max(0.0001f, dur);
@@ -136,7 +131,10 @@ public class FinalCount : MonoBehaviour
       yield return null;
     }
     cg.alpha = target;
+    cg.blocksRaycasts = visible;
+    cg.interactable = visible;
   }
+
   void OnFinalCountdownDone()
   {
     var rm = RaceManager.Instance;
