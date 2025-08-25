@@ -159,11 +159,6 @@ public class CarController : MonoBehaviour
 
   void FixedUpdate()
   {
-    //if (Time.frameCount % 60 == 0)
-    //{
-    //  Debug.Log($"[{name}] lv.z={currCarLocalVel.z:F2}, gear={currGear}, " +
-    //            $"Accel={acceleration}, RL={tires[2].name}, RR={tires[3].name}");
-    //}
     Suspension();
     GroundCheck();
 
