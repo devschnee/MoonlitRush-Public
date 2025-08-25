@@ -1,153 +1,153 @@
-ï»¿using System.Collections;
+using System.Collections;
 using System.Reflection;
 using UnityEngine;
 using Cinemachine;
 using TMPro;
 
-// ì—°ê²°:
-// - ItemCollector.ItemSlots â† Canvas/ItemSlots(ItemSlot ì»´í¬ë„ŒíŠ¸)
-// - UseItem.slotUI         â† Canvas/ItemSlots/Slot0/Slot0Icon(SlotUI ì»´í¬ë„ŒíŠ¸)
-// - VCam.Follow            â† ì°¨ ë£¨íŠ¸
-//   VCam.LookAt            â† ì°¨ ì²« ë²ˆì§¸ ìì‹(ì—†ìœ¼ë©´ ë£¨íŠ¸)
-// - Dashboard.car          â† ìë™ì°¨ì˜ CarController (ì—†ìœ¼ë©´ GameObjectë¡œë„ ì‹œë„)
-// - Canvas/ItemSlots.useItem â† ìë™ì°¨ì˜ UseItem
-// - FinalCount.PlayerCar   â† ì°¨ ë£¨íŠ¸
-// - StartCount.PlayerCar   â† ì°¨ ë£¨íŠ¸
-// - LapCounter.timeText    â† Canvas/LapTimeText
-//   LapCounter.CheckpointManager â† Checkpoints í”„ë¦¬íŒ¹
-// - Canvas/MinimapUI/RawImageMinimap/MinimapIcon.Target â† ì°¨ ë£¨íŠ¸
+// ¿¬°á:
+// - ItemCollector.ItemSlots ¡ç Canvas/ItemSlots(ItemSlot ÄÄÆ÷³ÍÆ®)
+// - UseItem.slotUI         ¡ç Canvas/ItemSlots/Slot0/Slot0Icon(SlotUI ÄÄÆ÷³ÍÆ®)
+// - VCam.Follow            ¡ç Â÷ ·çÆ®
+//   VCam.LookAt            ¡ç Â÷ Ã¹ ¹øÂ° ÀÚ½Ä(¾øÀ¸¸é ·çÆ®)
+// - Dashboard.car          ¡ç ÀÚµ¿Â÷ÀÇ CarController (¾øÀ¸¸é GameObject·Îµµ ½Ãµµ)
+// - Canvas/ItemSlots.useItem ¡ç ÀÚµ¿Â÷ÀÇ UseItem
+// - FinalCount.PlayerCar   ¡ç Â÷ ·çÆ®
+// - StartCount.PlayerCar   ¡ç Â÷ ·çÆ®
+// - LapCounter.timeText    ¡ç Canvas/LapTimeText
+//   LapCounter.CheckpointManager ¡ç Checkpoints ÇÁ¸®ÆÕ
+// - Canvas/MinimapUI/RawImageMinimap/MinimapIcon.Target ¡ç Â÷ ·çÆ®
 public class SceneBinder : MonoBehaviour
 {
-  [Header("Scene refs (Hierarchyì—ì„œ ë“œë˜ê·¸)")]
-  public CarSpawn carSpawn;                 // Hierarchyì˜ CarSpawn
-  public CinemachineVirtualCamera vcam;     // Hierarchyì˜ Virtual Camera
-  public ItemSlot canvasItemSlots;          // Canvas/ItemSlots (ItemSlot)
-  public SlotUI slot0IconUI;                // Canvas/ItemSlots/Slot0/Slot0Icon (SlotUI)
-  public Dashboard dashboard;               // Canvas/Dashboard (Dashboard)
+    [Header("Scene refs (Hierarchy¿¡¼­ µå·¡±×)")]
+    public CarSpawn carSpawn;                 // HierarchyÀÇ CarSpawn
+    public CinemachineVirtualCamera vcam;     // HierarchyÀÇ Virtual Camera
+    public ItemSlot canvasItemSlots;          // Canvas/ItemSlots (ItemSlot)
+    public SlotUI slot0IconUI;                // Canvas/ItemSlots/Slot0/Slot0Icon (SlotUI)
+    public Dashboard dashboard;               // Canvas/Dashboard (Dashboard)
 
-  public StartCount startCnt;               
-  public FinalCount finalCnt;              
-  public TextMeshProUGUI lapTimeText;       
-  public CheckpointManager checkpoints;     
-  public MinimapIcon pMinimapIcon;
-  public TextMeshProUGUI lapCntText;
+    public StartCount startCnt;
+    public FinalCount finalCnt;
+    public TextMeshProUGUI lapTimeText;
+    public CheckpointManager checkpoints;
+    public MinimapIcon pMinimapIcon;
+    public TextMeshProUGUI lapCntText;
 
-  IEnumerator Start()
-  {
-    if (!carSpawn) carSpawn = FindObjectOfType<CarSpawn>(true);
-    // Wait a moment for the car to spawn
-    while (!carSpawn || !carSpawn.lastSpawned) yield return null;
-
-    var car = carSpawn.lastSpawned;
-
-    // --- Cam Binding ---
-    if (vcam)
+    IEnumerator Start()
     {
-      vcam.Follow = car.transform;
-      vcam.LookAt = car.transform.childCount > 0 ? car.transform.GetChild(0) : car.transform;
+        if (!carSpawn) carSpawn = FindObjectOfType<CarSpawn>(true);
+        // Wait a moment for the car to spawn
+        while (!carSpawn || !carSpawn.lastSpawned) yield return null;
+
+        var car = carSpawn.lastSpawned;
+
+        // --- Cam Binding ---
+        if (vcam)
+        {
+            vcam.Follow = car.transform;
+            vcam.LookAt = car.transform.childCount > 0 ? car.transform.GetChild(0) : car.transform;
+        }
+
+        // --- Getting automotive components (·çÆ® ¿ì¼±, ¾øÀ¸¸é ÀÚ½Ä±îÁö) ---
+        var collector = car.GetComponent<ItemCollector>() ?? car.GetComponentInChildren<ItemCollector>(true);
+        var useItem = car.GetComponent<UseItem>() ?? car.GetComponentInChildren<UseItem>(true);
+        var carCtrl = car.GetComponent<CarController>() ?? car.GetComponentInChildren<CarController>(true);
+
+        // ItemCollector.ItemSlots ¡ç Canvas ItemSlots
+        AssignByNameThenType(collector, new[] { "ItemSlots", "itemSlots" }, canvasItemSlots);
+
+        // UseItem.slotUI ¡ç Slot0Icon(SlotUI)
+        AssignByNameThenType(useItem, new[] { "slotUI", "SlotUI" }, slot0IconUI);
+
+        // Dashboard.car ¡ç CarController (¶Ç´Â GameObject)
+        if (dashboard)
+        {
+            if (!AssignByNameThenType(dashboard, new[] { "car", "Car" }, carCtrl))
+                AssignByTypeOnly(dashboard, typeof(GameObject), car);
+        }
+
+
+        // Canvas ItemSlot.useItem ¡ç car.UseItem
+        AssignByNameThenType(canvasItemSlots, new[] { "useItem", "UseItem" }, useItem);
+
+        //if (finalCnt && carCtrl) finalCnt.playerCar = carCtrl;
+        //if (startCnt && carCtrl) startCnt.playerCar = carCtrl;
+        var lapCounter = car.GetComponent<LapCounter>() ?? car.GetComponentInChildren<LapCounter>();
+        if (!lapCntText)
+            lapCntText = GameObject.Find("Lap Text")?.GetComponent<TextMeshProUGUI>();
+        if (lapCounter)
+        {
+            if (lapCntText) lapCounter.lapText = lapCntText;
+            if (lapTimeText) lapCounter.timeText = lapTimeText;
+            if (checkpoints) lapCounter.checkpointManager = checkpoints;
+        }
+
+
+        if (pMinimapIcon)
+            pMinimapIcon.target = car.transform;
+
+        //Debug.Log("[SceneAutoWire] Wiring complete.");
     }
 
-    // --- Getting automotive components (ë£¨íŠ¸ ìš°ì„ , ì—†ìœ¼ë©´ ìì‹ê¹Œì§€) ---
-    var collector = car.GetComponent<ItemCollector>() ?? car.GetComponentInChildren<ItemCollector>(true);
-    var useItem = car.GetComponent<UseItem>() ?? car.GetComponentInChildren<UseItem>(true);
-    var carCtrl = car.GetComponent<CarController>() ?? car.GetComponentInChildren<CarController>(true);
-
-    // ItemCollector.ItemSlots â† Canvas ItemSlots
-    AssignByNameThenType(collector, new[] { "ItemSlots", "itemSlots" }, canvasItemSlots);
-
-    // UseItem.slotUI â† Slot0Icon(SlotUI)
-    AssignByNameThenType(useItem, new[] { "slotUI", "SlotUI" }, slot0IconUI);
-
-    // Dashboard.car â† CarController (ë˜ëŠ” GameObject)
-    if (dashboard)
+    // ---- First try with field name (multiple candidates), if that fails, match with type ----
+    static bool AssignByNameThenType(object target, string[] names, object value)
     {
-      if (!AssignByNameThenType(dashboard, new[] { "car", "Car" }, carCtrl))
-        AssignByTypeOnly(dashboard, typeof(GameObject), car);
+        if (target == null || value == null) return false;
+        var t = target.GetType();
+        var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        // ÀÌ¸§À¸·Î ¸ÕÀú
+        foreach (var n in names)
+        {
+            var f = t.GetField(n, flags);
+            if (f == null) continue;
+            if (IsAssignable(f.FieldType, value, out var boxed))
+            { f.SetValue(target, boxed); return true; }
+        }
+        // Å¸ÀÔÀ¸·Î ´ëÃ¼
+        return AssignByTypeOnly(target, value.GetType(), value);
     }
 
-
-    // Canvas ItemSlot.useItem â† car.UseItem
-    AssignByNameThenType(canvasItemSlots, new[] { "useItem", "UseItem" }, useItem);
-
-    //if (finalCnt && carCtrl) finalCnt.playerCar = carCtrl;
-    //if (startCnt && carCtrl) startCnt.playerCar = carCtrl;
-    var lapCounter = car.GetComponent<LapCounter>() ?? car.GetComponentInChildren<LapCounter>();
-    if (!lapCntText)
-      lapCntText = GameObject.Find("Lap Text")?.GetComponent<TextMeshProUGUI>();
-    if (lapCounter)
+    static bool AssignByTypeOnly(object target, System.Type desired, object value)
     {
-      if (lapCntText) lapCounter.lapText = lapCntText;
-      if (lapTimeText) lapCounter.timeText = lapTimeText;
-      if (checkpoints) lapCounter.checkpointManager = checkpoints;
+        if (target == null || value == null) return false;
+        var t = target.GetType();
+        var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        foreach (var f in t.GetFields(flags))
+        {
+            if (f.FieldType == desired || f.FieldType.IsAssignableFrom(desired))
+            {
+                if (IsAssignable(f.FieldType, value, out var boxed))
+                { f.SetValue(target, boxed); return true; }
+            }
+        }
+        return false;
     }
 
-
-    if (pMinimapIcon)
-      pMinimapIcon.target = car.transform;
-
-    Debug.Log("[SceneAutoWire] Wiring complete.");
-  }
-
-  // ---- First try with field name (multiple candidates), if that fails, match with type ----
-  static bool AssignByNameThenType(object target, string[] names, object value)
-  {
-    if (target == null || value == null) return false;
-    var t = target.GetType();
-    var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-    // ì´ë¦„ìœ¼ë¡œ ë¨¼ì €
-    foreach (var n in names)
+    // GameObject/Component/Transform °£ Çü º¯È¯ º¸Á¤ Æ÷ÇÔ
+    static bool IsAssignable(System.Type fieldType, object value, out object boxed)
     {
-      var f = t.GetField(n, flags);
-      if (f == null) continue;
-      if (IsAssignable(f.FieldType, value, out var boxed))
-      { f.SetValue(target, boxed); return true; }
+        boxed = null;
+        if (value == null) return false;
+
+        var vType = value.GetType();
+        if (fieldType.IsAssignableFrom(vType))
+        { boxed = value; return true; }
+
+        if (value is GameObject go)
+        {
+            if (fieldType == typeof(Transform)) { boxed = go.transform; return true; }
+            if (typeof(Component).IsAssignableFrom(fieldType))
+            {
+                var comp = go.GetComponent(fieldType);
+                if (comp) { boxed = comp; return true; }
+            }
+        }
+        else if (value is Component c)
+        {
+            if (fieldType == typeof(GameObject)) { boxed = c.gameObject; return true; }
+            if (fieldType == typeof(Transform)) { boxed = c.transform; return true; }
+        }
+        return false;
     }
-    // íƒ€ì…ìœ¼ë¡œ ëŒ€ì²´
-    return AssignByTypeOnly(target, value.GetType(), value);
-  }
-
-  static bool AssignByTypeOnly(object target, System.Type desired, object value)
-  {
-    if (target == null || value == null) return false;
-    var t = target.GetType();
-    var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-    foreach (var f in t.GetFields(flags))
-    {
-      if (f.FieldType == desired || f.FieldType.IsAssignableFrom(desired))
-      {
-        if (IsAssignable(f.FieldType, value, out var boxed))
-        { f.SetValue(target, boxed); return true; }
-      }
-    }
-    return false;
-  }
-
-  // GameObject/Component/Transform ê°„ í˜• ë³€í™˜ ë³´ì • í¬í•¨
-  static bool IsAssignable(System.Type fieldType, object value, out object boxed)
-  {
-    boxed = null;
-    if (value == null) return false;
-
-    var vType = value.GetType();
-    if (fieldType.IsAssignableFrom(vType))
-    { boxed = value; return true; }
-
-    if (value is GameObject go)
-    {
-      if (fieldType == typeof(Transform)) { boxed = go.transform; return true; }
-      if (typeof(Component).IsAssignableFrom(fieldType))
-      {
-        var comp = go.GetComponent(fieldType);
-        if (comp) { boxed = comp; return true; }
-      }
-    }
-    else if (value is Component c)
-    {
-      if (fieldType == typeof(GameObject)) { boxed = c.gameObject; return true; }
-      if (fieldType == typeof(Transform)) { boxed = c.transform; return true; }
-    }
-    return false;
-  }
 }

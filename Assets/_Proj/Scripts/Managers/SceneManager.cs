@@ -1,10 +1,13 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Use it by attaching it to an empty game object.
 public class SceneLoader : MonoBehaviour
 {
   public static SceneLoader Instance;
+
+    public AudioSource source;
+    public AudioClip clip;
 
   void Awake()
   {
@@ -24,6 +27,8 @@ public class SceneLoader : MonoBehaviour
   {
     if(!string.IsNullOrEmpty(sceneName))
       SceneManager.LoadScene(sceneName);
+
+    source.PlayOneShot(clip);
   }
 
   // Load by scene index
@@ -31,13 +36,15 @@ public class SceneLoader : MonoBehaviour
   {
     if(sceneIdx >= 0 && sceneIdx < SceneManager.sceneCountInBuildSettings)
       SceneManager.LoadScene(sceneIdx);
-  }
+        source.PlayOneShot(clip);
+    }
 
   // Reload current scene
   public void ReloadScene()
   {
     SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-  }
+        source.PlayOneShot(clip);
+    }
 
   public void QuitGame()
   {

@@ -8,7 +8,7 @@ public class CarSelectionUI : MonoBehaviour
     public GameObject[] carPrefabs;  //현재 배열에 넣은 car는 임시로 후에 수정
     int selectedCarIndex = 0;
 
-    private AudioSource source;
+    [SerializeField]private AudioSource source;
     public AudioClip selectedCarClip;
 
     private void Start()

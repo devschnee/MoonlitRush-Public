@@ -1,4 +1,4 @@
-ï»¿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using PlayerTimeData = TimeManager.PlayerTimeData;
 
@@ -10,7 +10,7 @@ public class RankingUI : MonoBehaviour
     public GameObject rankingEntryPrefab;
 
     [Header("Options")]
-    public bool autoPopulateOnStart = false; // í•„ìš”í•  ë•Œë§Œ Startì—ì„œ ìë™ ì±„ì›€
+    public bool autoPopulateOnStart = false; // ÇÊ¿äÇÒ ¶§¸¸ Start¿¡¼­ ÀÚµ¿ Ã¤¿ò
 
     void Start()
     {
@@ -25,7 +25,7 @@ public class RankingUI : MonoBehaviour
         if (rankingPanel) rankingPanel.SetActive(true);
         if (rankingListParent == null || rankingEntryPrefab == null || results == null)
         {
-            Debug.LogWarning("[RankingUI] refs or data missing.");
+            //Debug.LogWarning("[RankingUI] refs or data missing.");
             return;
         }
 

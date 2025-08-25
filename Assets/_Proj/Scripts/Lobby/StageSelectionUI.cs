@@ -1,4 +1,4 @@
-ï»¿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -6,23 +6,25 @@ using UnityEngine.UI;
 
 public class StageSelectManager : MonoBehaviour
 {
-    public Outline[] stageOutlines; //ìŠ¤í…Œì´ì§€ ì¸ë„¤ì¼ í…Œë‘ë¦¬ ë°°ì—´
+    public Outline[] stageOutlines; //½ºÅ×ÀÌÁö ½æ³×ÀÏ Å×µÎ¸® ¹è¿­
     public Color selectedColor = Color.yellow;
     public Color defaultColor = Color.clear;
 
-    public Button StartButton; //ê²Œì„ ì‹œì‘ ë²„íŠ¼
+    public Button StartButton; //°ÔÀÓ ½ÃÀÛ ¹öÆ°
 
-    int selectedStageIndex = -1; //í˜„ì¬ ì„ íƒëœ ìŠ¤í…Œì´ì§€ ì¸ë±ìŠ¤ ; -1ë¡œ í•œ ì´ìœ ëŠ” ì²˜ìŒ ì‹œì‘ ì‹œ ìŠ¤í…Œì´ì§€ë¥¼ ì„ íƒí•œ ìƒíƒœê°€ ì•„ë‹ˆê¸° ë•Œë¬¸
+    int selectedStageIndex = -1; //ÇöÀç ¼±ÅÃµÈ ½ºÅ×ÀÌÁö ÀÎµ¦½º ; -1·Î ÇÑ ÀÌÀ¯´Â Ã³À½ ½ÃÀÛ ½Ã ½ºÅ×ÀÌÁö¸¦ ¼±ÅÃÇÑ »óÅÂ°¡ ¾Æ´Ï±â ¶§¹®
 
+    public AudioSource source;
+    public AudioClip clip;
     private void Start()
     {
-        //ëª¨ë“  ìŠ¤í…Œì´ì§€ ì¸ë„¤ì¼ì„ ê¸°ë³¸ ìƒ‰ìƒìœ¼ë¡œ
+        //¸ğµç ½ºÅ×ÀÌÁö ½æ³×ÀÏÀ» ±âº» »ö»óÀ¸·Î
         for(int i = 0; i < stageOutlines.Length; i++)
         {
             stageOutlines[i].effectColor = defaultColor;
 
-            //ê° ì¸ë„¤ì¼ì— í´ë¦­ ì´ë²¤íŠ¸ ì¶”ê°€
-            int index = i; //í´ë¡œì € ë¬¸ì œ ë°©ì§€ ; í´ë¡œì €: 
+            //°¢ ½æ³×ÀÏ¿¡ Å¬¸¯ ÀÌº¥Æ® Ãß°¡
+            int index = i; //Å¬·ÎÀú ¹®Á¦ ¹æÁö ; Å¬·ÎÀú: 
             stageOutlines[i].GetComponent<Button>().onClick.AddListener(() => OnStageSelected(index));
         }
 
@@ -33,38 +35,40 @@ public class StageSelectManager : MonoBehaviour
 
     public void OnStageSelected(int index)
     {
-        //ì´ì „ì— ì„ íƒëœ ìŠ¤í…Œì´ì§€ì˜ ìƒ‰ìƒì„ ì›ë˜ëŒ€ë¡œ
+        //ÀÌÀü¿¡ ¼±ÅÃµÈ ½ºÅ×ÀÌÁöÀÇ »ö»óÀ» ¿ø·¡´ë·Î
         if(selectedStageIndex != -1)
         {
             stageOutlines[selectedStageIndex].effectColor = defaultColor;
         }
 
-        //ìƒˆë¡­ê²Œ ì„ íƒëœ ìŠ¤í…Œì´ì§€ì˜ ìƒ‰ìƒ ë³€ê²½
+        //»õ·Ó°Ô ¼±ÅÃµÈ ½ºÅ×ÀÌÁöÀÇ »ö»ó º¯°æ
         selectedStageIndex = index;
         stageOutlines[selectedStageIndex].effectColor = selectedColor;
 
-        //ì„ íƒëœ ìŠ¤í…Œì´ì§€ ì¸ë±ìŠ¤ë¥¼ ì €ì¥
+        //¼±ÅÃµÈ ½ºÅ×ÀÌÁö ÀÎµ¦½º¸¦ ÀúÀå
         PlayerPrefs.SetInt("SelectedStage", selectedStageIndex);
         Debug.Log("Selected Stage: " + (selectedStageIndex));
 
-        //ìŠ¤í…Œì´ì§€ ì„ íƒ ì‹œ ì‹œì‘ ë²„íŠ¼ í™œì„±í™”
+        //½ºÅ×ÀÌÁö ¼±ÅÃ ½Ã ½ÃÀÛ ¹öÆ° È°¼ºÈ­
         if (StartButton != null) {
 
             StartButton.interactable = true;
         }
+
+        source.PlayOneShot(clip);
     }
 
     public void StartGame()
     {
-        //ìŠ¤í…Œì´ì§€ ì„ íƒ í™•ì¸
+        //½ºÅ×ÀÌÁö ¼±ÅÃ È®ÀÎ
         if (selectedStageIndex != -1)
         {
-      //ì„ íƒëœ ìŠ¤í…Œì´ì§€ ì¸ë±ìŠ¤ë¥¼ ê¸°ë°˜ìœ¼ë¡œ scene ë¡œë“œ
-      UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
+      //¼±ÅÃµÈ ½ºÅ×ÀÌÁö ÀÎµ¦½º¸¦ ±â¹İÀ¸·Î scene ·Îµå
+      UnityEngine.SceneManagement.SceneManager.LoadScene("CityMap");
         }
         else
         {
-            Debug.LogWarning("ê²Œì„ ì‹œì‘ ì „ ìŠ¤í…Œì´ì§€ ì„ íƒ í™•ì¸");
+            Debug.LogWarning("°ÔÀÓ ½ÃÀÛ Àü ½ºÅ×ÀÌÁö ¼±ÅÃ È®ÀÎ");
         }
     }
 }

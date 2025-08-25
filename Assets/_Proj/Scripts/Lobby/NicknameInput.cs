@@ -12,7 +12,7 @@ public class NicknameInput : MonoBehaviour
     [SerializeField] Button OkButton;        
     [SerializeField] GameObject panelRoot;
 
-    private AudioSource source;
+    public AudioSource source;
     public AudioClip buttonSound;
     void OnEnable()
     {

@@ -1,21 +1,21 @@
-ï»¿using UnityEngine;
+using UnityEngine;
 
 public class MissileItem : MonoBehaviour
 {
   public Transform shotPoint;
-  public GameObject missilePrefab; // Rigidbody + MissileProj ì»´í¬ë„ŒíŠ¸ ê°€ì§„ ì˜¤ë¸Œì íŠ¸
+  public GameObject missilePrefab; // Rigidbody + MissileProj ÄÄÆ÷³ÍÆ® °¡Áø ¿ÀºêÁ§Æ®
 
   public void Activate(ItemData data)
   {
     if (missilePrefab == null)
     {
-      print("ë¯¸ì‚¬ì¼ í• ë‹¹ ì•ˆ ë¨");
+      print("¹Ì»çÀÏ ÇÒ´ç ¾È µÊ");
       return;
     }
     
     if (data.fxPrefab == null)
     {
-      Debug.LogError("fxPrefabë¹„ì–´ìˆìŒ");
+      //Debug.LogError("fxPrefabºñ¾îÀÖÀ½");
       return;
     }
 
@@ -26,7 +26,7 @@ public class MissileItem : MonoBehaviour
     if (trail != null) { trail.Clear(); }
 
     MissileProj proj = missile.GetComponent<MissileProj>();
-    Debug.Log("Proj?" + (proj!=null));
+   // Debug.Log("Proj?" + (proj!=null));
     //if(proj != null)
     //{
     //  proj.Init(data.power, data.duration, gameObject, data.fxPrefab);

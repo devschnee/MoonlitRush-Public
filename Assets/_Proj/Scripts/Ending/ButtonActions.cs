@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class ButtonActions : MonoBehaviour
 {
-    private AudioSource source;
+    [SerializeField]private AudioSource source;
     public AudioClip clip;
     public void GoToLobby()
     {

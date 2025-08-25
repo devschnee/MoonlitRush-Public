@@ -1,4 +1,4 @@
-ï»¿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -7,17 +7,18 @@ public class TimeManager : MonoBehaviour
     // Singleton Instance : Accessible from anywhere
     public static TimeManager Instance;
 
-    [Header("Podium")]
-    public GameObject winnerPodiumPrefab;
-
+    //[Header("Podium")]
+    //public GameObject winnerPodiumPrefab;
+    private float playerFinishTime = 0f;
     public class PlayerTimeData
     {
         public string playerName;
         public float finishTime;
         public bool finished = true;
+        public bool isPlayer;
     }
 
-    public List<PlayerTimeData> data = new List<PlayerTimeData>();
+    public readonly List<PlayerTimeData> data = new List<PlayerTimeData>();
     public List<PlayerTimeData> Results => GetRanking();
 
 
@@ -42,12 +43,11 @@ public class TimeManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject); // Maintained even where other scenes (Timer Data)
     }
 
     void Start()
     {
-        // ì—ë””í„°ì—ì„œ ë¹ˆ ì”¬ì—ì„œ í…ŒìŠ¤íŠ¸ í• ë•Œ Play ëˆ„ë¥´ìë§ˆì ì‹¤í–‰ë˜ê²Œ ë§Œë“¤ì—ˆìŒ. ì”¬ ì—¬ëŸ¬ê°œ ì—°ê²°ë˜ë©´ ì‹œì‘ íƒ€ì„ ì •í•´ì£¼ê³ (ì¹´ìš´íŠ¸ë‹¤ìš´ ì´í›„ ë“±) ì‚­ì œ.
+        // ¿¡µğÅÍ¿¡¼­ ºó ¾À¿¡¼­ Å×½ºÆ® ÇÒ¶§ Play ´©¸£ÀÚ¸¶ÀÚ ½ÇÇàµÇ°Ô ¸¸µé¾úÀ½. ¾À ¿©·¯°³ ¿¬°áµÇ¸é ½ÃÀÛ Å¸ÀÓ Á¤ÇØÁÖ°í(Ä«¿îÆ®´Ù¿î ÀÌÈÄ µî) »èÁ¦.
 #if UNITY_EDITOR
         //StartTimer();
 #endif
@@ -69,6 +69,7 @@ public class TimeManager : MonoBehaviour
         if (isPaused) ResumeTimer();
         raceEndTime = Time.time;
         isTiming = false;
+        playerFinishTime = RaceDuration;
     }
 
     // Pause: Saves the current time and sets it to stopped state
@@ -90,12 +91,18 @@ public class TimeManager : MonoBehaviour
     // Returns elapsed time as a string (minutes:seconds.milliseconds)
     public static string FormatTime(float t)
     {
+        if (t < 0 || float.IsNaN(t) || float.IsInfinity(t)) return "--";
         int m = Mathf.FloorToInt(t / 60f);
         float s = t % 60f;
         return $"{m:00}:{s:00.000}";
     }
 
-    public string GetFormatRaceTime() => FormatTime(RaceDuration);
+    public string GetFormatRaceTime()
+    {
+        if (isTiming) return FormatTime(RaceDuration);
+        else return FormatTime(playerFinishTime);
+
+    }
 
     // Reset Timer
     public void ResetTimer()
@@ -106,11 +113,12 @@ public class TimeManager : MonoBehaviour
         isPaused = false;
         pausedTime = 0f;
         totalPausedDuration = 0f;
-        winnerPodiumPrefab = null;
+        //winnerPodiumPrefab = null;
     }
 
     public void RecordFinishTime(string name, float fTime)
     {
+
         string safe = string.IsNullOrWhiteSpace(name)
             ? PlayerPrefs.GetString("PlayerNickname", "Player")
             : name;
@@ -123,21 +131,71 @@ public class TimeManager : MonoBehaviour
 
     public void RecordFinishTime(RacerInfo ri, float fTime)
     {
-        string safe = (ri && !string.IsNullOrWhiteSpace(ri.displayName))
-            ? ri.displayName
-            : PlayerPrefs.GetString("PlayerNickname", "Player");
-        RecordFinishTime(safe, fTime);
+        if (ri == null) return;
+
+        string safeName = SafeNameOf(ri);
+
+        if (data.Any(x => x.playerName == safeName)) return;
+
+        data.Add(new PlayerTimeData
+        {
+            playerName = safeName,
+            finishTime = fTime,
+            isPlayer = ri.isPlayer,
+            finished = (fTime >= 0f)
+        });
     }
 
-    public void TrySetWinnerPrefab(RacerInfo ri)
+    public static string SafeNameOf(RacerInfo ri)
     {
-        if (!winnerPodiumPrefab && ri && ri.podiumDisplayPrefab)
-            winnerPodiumPrefab = ri.podiumDisplayPrefab;
+        return !string.IsNullOrWhiteSpace(ri.displayName) ? ri.displayName :
+               !string.IsNullOrWhiteSpace(ri.racerName) ? ri.racerName :
+               PlayerPrefs.GetString("PlayerNickname", "Player");
     }
+    public void EnsureDNFsFrom(List<RacerInfo> racers)
+    {
+        if (racers == null) return;
+
+        foreach (var r in racers)
+        {
+            if (!r) continue;
+
+            string safeName =
+                !string.IsNullOrWhiteSpace(r.displayName) ? r.displayName :
+                !string.IsNullOrWhiteSpace(r.racerName) ? r.racerName :
+                PlayerPrefs.GetString("PlayerNickname", "Player");
+
+            // ÀÌ¹Ì ±â·ÏµÈ(¿ÏÁÖÇÑ) ÀÌ¸§Àº ½ºÅµ
+            if (data.Any(d => d.playerName == safeName)) continue;
+
+            // DNF Ãß°¡
+            data.Add(new PlayerTimeData
+            {
+                playerName = safeName,
+                finishTime = -1f,
+                finished = false,
+                isPlayer = r.isPlayer
+            });
+        }
+    }
+
+    // ÆíÀÇ: UI¿¡¼­ "--" Âï±â ½±°Ô
+    public static string FormatOrDash(PlayerTimeData p)
+    {
+        return (p != null && p.finished && p.finishTime >= 0f)
+            ? FormatTime(p.finishTime)
+            : "Time Over";
+    }
+    //public void TrySetWinnerPrefab(RacerInfo ri)
+    //{
+    //    if (!winnerPodiumPrefab && ri && ri.podiumDisplayPrefab)
+    //        winnerPodiumPrefab = ri.podiumDisplayPrefab;
+    //}
 
     public List<PlayerTimeData> GetRanking()
     {
-        return data.OrderBy(p => p.finishTime).ToList(); // Sort racing records by fastest time
+        return new List<PlayerTimeData>(data);
+        //return data.OrderBy(p => p.finishTime).ToList(); // Sort racing records by fastest time
     }
 
 }

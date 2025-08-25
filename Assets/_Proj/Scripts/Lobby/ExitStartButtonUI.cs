@@ -9,7 +9,7 @@ public class ExitStartButtonUI : MonoBehaviour
     public GameObject exit;
     public CarSelectionUI carSelectionUI;
 
-    private AudioSource source;
+   [SerializeField] private AudioSource source;
     public AudioClip buttonSound;
     
 
@@ -50,14 +50,14 @@ public class ExitStartButtonUI : MonoBehaviour
     {
         // 선택 정보 저장
         carSelectionUI.SaveSelection();
-        UnityEngine.SceneManagement.SceneManager.LoadScene("CityMap");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
         source.PlayOneShot(buttonSound);
     }
 
     //결과창에서 재시작
     public void ReGameStart()
     {
-        UnityEngine.SceneManagement.SceneManager.LoadScene("CityMap");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
         source.PlayOneShot(buttonSound);
     }
         

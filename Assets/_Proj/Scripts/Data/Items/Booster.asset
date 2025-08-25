@@ -18,5 +18,5 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 271cb5573b26fe849bb726d0c0e702ed, type: 3}
   fxPrefab: {fileID: 0}
   duration: 1.5
-  power: 40
+  power: 35
   useSound: {fileID: 0}
