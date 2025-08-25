@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/TextMesh Pro/Examples & Extras.meta
 guid: 700b05138683479448dbf87c54b3d8cc
+========
+guid: 92f0b2714f5227941991edb0e9ce3235
+>>>>>>>> origin/main:Assets/_Proj/Materials/Background.meta
 folderAsset: yes
 DefaultImporter:
   externalObjects: {}

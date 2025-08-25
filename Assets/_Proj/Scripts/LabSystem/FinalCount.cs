@@ -1,4 +1,4 @@
-using System.Collections;
+Ôªøusing System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -7,250 +7,250 @@ using UnityEngine.SceneManagement;
 
 public class FinalCount : MonoBehaviour
 {
-    public static FinalCount Instance;
+  public static FinalCount Instance;
 
-    [Header("UI")]
-    public TextMeshProUGUI finalCountText;
+  [Header("UI")]
+  public TextMeshProUGUI finalCountText;
 
-    [Header("Timing")]
-    [Min(0)] public int defaultSeconds = 10;
-    [Min(0)] public float winnerSlowDuration = 1.0f;
-    [Min(0)] public float othersSlowDuration = 0.8f;
+  [Header("Timing")]
+  [Min(0)] public int defaultSeconds = 10;
+  [Min(0)] public float winnerSlowDuration = 1.0f;
+  [Min(0)] public float othersSlowDuration = 0.8f;
 
-    [Header("Fade to Ending")]
-    public CanvasGroup endFade;
-    [Min(0)] public float endFadeDuration = 0.6f;
+  [Header("Fade to Ending")]
+  public CanvasGroup endFade;
+  [Min(0)] public float endFadeDuration = 0.6f;
 
-    [Header("Scene")]
-    public string endingSceneName = "Ending";
+  [Header("Scene")]
+  public string endingSceneName = "Ending";
 
-    bool isGameEnding;
+  bool isGameEnding;
 
-    // ====== Audio ======
-    [Header("Audio")]
-    public AudioSource sfxSource;          // ƒ´øÓ∆Æ¥ŸøÓ µøæ» ∞Ëº” øÔ∏± SFX ¿Áª˝±‚
-    public AudioClip finalLoopClip;        // ƒ´øÓ∆Æ¥ŸøÓ 10√  µøæ» ∑Á«¡∑Œ ¿Áª˝«“ ≈¨∏≥
-    public AudioSource bgmSource;          // ƒ´∏ﬁ∂Û(∂«¥¬ BGMøÎ) AudioSource
-    [Range(0f, 1f)] public float bgmDimVolume = 0.35f; // ∆ƒ¿Ã≥Œ ¡ﬂø° ¡Ÿ¿œ ∫º∑˝
-    [Min(0f)] public float bgmFadeTime = 0.3f;        // ∆‰¿ÃµÂ Ω√∞£
-    public AudioClip finishStinger;        // ("Finish!")ø° «— π¯∏∏ ∆≤ ∞£¥‹«— Ω∫∆√æÓ
+  // ====== Audio ======
+  [Header("Audio")]
+  public AudioSource sfxSource;          // Ïπ¥Ïö¥Ìä∏Îã§Ïö¥ ÎèôÏïà Í≥ÑÏÜç Ïö∏Î¶¥ SFX Ïû¨ÏÉùÍ∏∞
+  public AudioClip finalLoopClip;        // Ïπ¥Ïö¥Ìä∏Îã§Ïö¥ 10Ï¥à ÎèôÏïà Î£®ÌîÑÎ°ú Ïû¨ÏÉùÌï† ÌÅ¥Î¶Ω
+  public AudioSource bgmSource;          // Ïπ¥Î©îÎùº(ÎòêÎäî BGMÏö©) AudioSource
+  [Range(0f, 1f)] public float bgmDimVolume = 0.35f; // ÌååÏù¥ÎÑê Ï§ëÏóê Ï§ÑÏùº Î≥ºÎ•®
+  [Min(0f)] public float bgmFadeTime = 0.3f;        // ÌéòÏù¥Îìú ÏãúÍ∞Ñ
+  public AudioClip finishStinger;        // ("Finish!")Ïóê Ìïú Î≤àÎßå ÌãÄ Í∞ÑÎã®Ìïú Ïä§ÌåÖÏñ¥
 
-    void Awake()
+  void Awake()
+  {
+    Instance = this;
+    if (finalCountText) finalCountText.gameObject.SetActive(false);
+  }
+
+  public void StartCountdown(int seconds, RacerInfo winner = null)
+  {
+    if (isGameEnding) return;
+    isGameEnding = true;
+
+    //TimeManager.Instance?.PauseTimer();
+
+    if (winner) StartCoroutine(SlowdownOne(winner, winnerSlowDuration, true));
+    StartCoroutine(CoFinal(seconds > 0 ? seconds : defaultSeconds, winner));
+  }
+
+  public void Finish() => StartCountdown(defaultSeconds);
+
+  IEnumerator CoFinal(int sec, RacerInfo winner)
+  {
+    // BGM Î≥ºÎ•® ÏÇ¥Ïßù ÎÇÆÏ∂îÍ∏∞
+    StartCoroutine(FadeAudio(bgmSource, bgmDimVolume, bgmFadeTime));
+
+    // Ïπ¥Ïö¥Ìä∏Îã§Ïö¥ ÎèôÏïà Ïò§ÎîîÏò§ Î£®ÌîÑ
+    if (sfxSource && finalLoopClip)
     {
-        Instance = this;
-        if (finalCountText) finalCountText.gameObject.SetActive(false);
+      sfxSource.loop = true;
+      sfxSource.clip = finalLoopClip;
+      sfxSource.Play();
+    }
+    if (finalCountText) finalCountText.gameObject.SetActive(true);
+
+    for (int i = sec; i > 0; i--)
+    {
+      if (finalCountText) finalCountText.text = i.ToString();
+      yield return new WaitForSecondsRealtime(1f);
     }
 
-    public void StartCountdown(int seconds, RacerInfo winner = null)
+    if (finalCountText) finalCountText.text = "Finish!";
+    if (sfxSource && sfxSource.isPlaying) sfxSource.Stop(); // Î£®ÌîÑ Ï¢ÖÎ£å
+    if (sfxSource && finishStinger) sfxSource.PlayOneShot(finishStinger);
+
+    yield return new WaitForSecondsRealtime(1f);
+
+    if (endFade) StartCoroutine(FadeTo(endFade, 0f, 0.25f));
+    var everyone = FindObjectsOfType<RacerInfo>(true);
+    foreach (var r in everyone)
     {
-        if (isGameEnding) return;
-        isGameEnding = true;
+      if (!r || (winner != null && r == winner)) continue;
+      StartCoroutine(SlowdownOne(r, othersSlowDuration, true));
+    }
+    yield return new WaitForSecondsRealtime(Mathf.Max(0.2f, othersSlowDuration * 0.6f));
 
-        //TimeManager.Instance?.PauseTimer();
+    if (endFade) endFade.gameObject.SetActive(true);
+    if (endFade) yield return FadeTo(endFade, 1f, endFadeDuration);
+    OnFinalCountdownDone();
+    LoadEndingSceneSafe();
+  }
 
-        if (winner) StartCoroutine(SlowdownOne(winner, winnerSlowDuration, true));
-        StartCoroutine(CoFinal(seconds > 0 ? seconds : defaultSeconds, winner));
+  IEnumerator SlowdownOne(RacerInfo racer, float duration, bool lockControl)
+  {
+    if (!racer) yield break;
+
+    var tf = racer.transform;
+    var rb = tf.GetComponentInParent<Rigidbody>() ?? tf.GetComponentInChildren<Rigidbody>();
+    var car = tf.GetComponentInParent<CarController>() ?? tf.GetComponentInChildren<CarController>();
+    var ai = tf.GetComponentInParent<AICarController>() ?? tf.GetComponentInChildren<AICarController>();
+
+    if (car){ car.isFinished = true; car.moveInput = 0f;}
+    if (ai) { ai.isFinished = true; ai.moveInput = 0f; }
+    if (car)
+    {
+      car.BeginFinishSequence(duration, lockControl);
+      yield break;
+    }
+    if (ai)
+    {
+      yield return ai.SmoothStop(duration);
+      if (lockControl)
+      {
+        ai.moveStart = false;
+        ai.enabled = false;
+        if (rb) rb.isKinematic = true;
+      }
+      yield break;
+    }
+    // ÏãúÏûëÍ∞í Ï∫êÏãúÌï¥ÏÑú Îß§ ÌîÑÎ†àÏûÑ Î∂ÄÎìúÎüΩÍ≤å Lerp
+    float t = 0f;
+    Vector3 v0 = rb ? rb.velocity : Vector3.zero;
+    Vector3 w0 = rb ? rb.angularVelocity : Vector3.zero;
+    while (t < duration)
+    {
+      if (!rb) break;
+      if (rb)
+      {
+        float k = (duration <= 0f) ? 1f : t / duration;
+        rb.velocity = Vector3.Lerp(rb.velocity, Vector3.zero, k);
+        rb.angularVelocity = Vector3.Lerp(rb.angularVelocity, Vector3.zero, k);
+      }
+      t += Time.unscaledDeltaTime;
+      yield return null;
     }
 
-    public void Finish() => StartCountdown(defaultSeconds);
+    if (rb) { rb.velocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
 
-    IEnumerator CoFinal(int sec, RacerInfo winner)
+    if (lockControl)
     {
-        // BGM ∫º∑˝ ªÏ¬¶ ≥∑√ﬂ±‚
-        StartCoroutine(FadeAudio(bgmSource, bgmDimVolume, bgmFadeTime));
-
-        // ƒ´øÓ∆Æ¥ŸøÓ µøæ» ø¿µø¿ ∑Á«¡
-        if (sfxSource && finalLoopClip)
-        {
-            sfxSource.loop = true;
-            sfxSource.clip = finalLoopClip;
-            sfxSource.Play();
-        }
-        if (finalCountText) finalCountText.gameObject.SetActive(true);
-
-        for (int i = sec; i > 0; i--)
-        {
-            if (finalCountText) finalCountText.text = i.ToString();
-            yield return new WaitForSecondsRealtime(1f);
-        }
-
-        if (finalCountText) finalCountText.text = "Finish!";
-        if (sfxSource && sfxSource.isPlaying) sfxSource.Stop(); // ∑Á«¡ ¡æ∑·
-        if (sfxSource && finishStinger) sfxSource.PlayOneShot(finishStinger);
-
-        yield return new WaitForSecondsRealtime(1f);
-
-        if (endFade) StartCoroutine(FadeTo(endFade, 0f, 0.25f));
-        var everyone = FindObjectsOfType<RacerInfo>(true);
-        foreach (var r in everyone)
-        {
-            if (!r || (winner != null && r == winner)) continue;
-            StartCoroutine(SlowdownOne(r, othersSlowDuration, true));
-        }
-        yield return new WaitForSecondsRealtime(Mathf.Max(0.2f, othersSlowDuration * 0.6f));
-
-        if (endFade) endFade.gameObject.SetActive(true);
-        if (endFade) yield return FadeTo(endFade, 1f, endFadeDuration);
-        OnFinalCountdownDone();
-        LoadEndingSceneSafe();
+      if (car) car.enabled = false;
+      if (ai) { ai.moveStart = false; ai.enabled = false; }
+      if (rb) rb.isKinematic = true;
     }
+  }
 
-    IEnumerator SlowdownOne(RacerInfo racer, float duration, bool lockControl)
+  IEnumerator FadeTo(CanvasGroup cg, float target, float dur)
+  {
+    if (!cg) yield break;
+
+    bool visible = target > 0.001f;
+    cg.blocksRaycasts = visible;
+    cg.interactable = visible;
+
+    if (dur <= 0f) { cg.alpha = target; yield break; }
+
+    float start = cg.alpha, t = 0f;
+    while (t < 1f)
     {
-        if (!racer) yield break;
-
-        var tf = racer.transform;
-        var rb = tf.GetComponentInParent<Rigidbody>() ?? tf.GetComponentInChildren<Rigidbody>();
-        var car = tf.GetComponentInParent<CarController>() ?? tf.GetComponentInChildren<CarController>();
-        var ai = tf.GetComponentInParent<AICarController>() ?? tf.GetComponentInChildren<AICarController>();
-
-        if (car) { car.isFinished = true; car.moveInput = 0f; }
-        if (ai) { ai.isFinished = true; ai.moveInput = 0f; }
-        if (car)
-        {
-            car.BeginFinishSequence(duration, lockControl);
-            yield break;
-        }
-        if (ai)
-        {
-            yield return ai.SmoothStop(duration);
-            if (lockControl)
-            {
-                ai.moveStart = false;
-                ai.enabled = false;
-                if (rb) rb.isKinematic = true;
-            }
-            yield break;
-        }
-        // Ω√¿€∞™ ƒ≥Ω√«ÿº≠ ∏≈ «¡∑π¿” ∫ŒµÂ∑¥∞‘ Lerp
-        float t = 0f;
-        Vector3 v0 = rb ? rb.velocity : Vector3.zero;
-        Vector3 w0 = rb ? rb.angularVelocity : Vector3.zero;
-        while (t < duration)
-        {
-            if (!rb) break;
-            if (rb)
-            {
-                float k = (duration <= 0f) ? 1f : t / duration;
-                rb.velocity = Vector3.Lerp(rb.velocity, Vector3.zero, k);
-                rb.angularVelocity = Vector3.Lerp(rb.angularVelocity, Vector3.zero, k);
-            }
-            t += Time.unscaledDeltaTime;
-            yield return null;
-        }
-
-        if (rb) { rb.velocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
-
-        if (lockControl)
-        {
-            if (car) car.enabled = false;
-            if (ai) { ai.moveStart = false; ai.enabled = false; }
-            if (rb) rb.isKinematic = true;
-        }
+      t += Time.unscaledDeltaTime / Mathf.Max(0.0001f, dur);
+      cg.alpha = Mathf.Lerp(start, target, t);
+      yield return null;
     }
+    cg.alpha = target;
+    cg.blocksRaycasts = visible;
+    cg.interactable = visible;
+  }
 
-    IEnumerator FadeTo(CanvasGroup cg, float target, float dur)
+  IEnumerator FadeAudio(AudioSource src, float target, float dur)
+  {
+    if (!src) yield break;
+    if (dur <= 0f) { src.volume = target; yield break; }
+
+    float start = src.volume, t = 0f;
+    while (t < 1f)
     {
-        if (!cg) yield break;
-
-        bool visible = target > 0.001f;
-        cg.blocksRaycasts = visible;
-        cg.interactable = visible;
-
-        if (dur <= 0f) { cg.alpha = target; yield break; }
-
-        float start = cg.alpha, t = 0f;
-        while (t < 1f)
-        {
-            t += Time.unscaledDeltaTime / Mathf.Max(0.0001f, dur);
-            cg.alpha = Mathf.Lerp(start, target, t);
-            yield return null;
-        }
-        cg.alpha = target;
-        cg.blocksRaycasts = visible;
-        cg.interactable = visible;
+      t += Time.unscaledDeltaTime / Mathf.Max(0.0001f, dur);
+      src.volume = Mathf.Lerp(start, target, t);
+      yield return null;
     }
+    src.volume = target;
+  }
 
-    IEnumerator FadeAudio(AudioSource src, float target, float dur)
+  void OnFinalCountdownDone()
+  {
+    var rm = RaceManager.Instance;
+    var tm = TimeManager.Instance;
+
+    if (tm != null && rm != null)
     {
-        if (!src) yield break;
-        if (dur <= 0f) { src.volume = target; yield break; }
+      // 1) DNF Ï±ÑÏö∞Í∏∞
+      tm.EnsureDNFsFrom(rm.racers);
 
-        float start = src.volume, t = 0f;
-        while (t < 1f)
+      // 2) ÏµúÏ¢Ö ÏàúÏúÑ ÏÉùÏÑ± (ÏôÑÏ£ºÏûê ‚Üí ÎØ∏ÏôÑÏ£ºÏûê)
+      var dict = tm.data.ToDictionary(x => x.playerName, x => x);
+      var final = new List<TimeManager.PlayerTimeData>();
+
+      foreach (var r in rm.racers.Where(x => x && x.finished).OrderBy(x => x.finishOrder))
+      {
+        string name = TimeManager.SafeNameOf(r);
+        if (dict.TryGetValue(name, out var p))
+          final.Add(p);
+        else
         {
-            t += Time.unscaledDeltaTime / Mathf.Max(0.0001f, dur);
-            src.volume = Mathf.Lerp(start, target, t);
-            yield return null;
+          float f = (r.finishClock >= 0) ? r.finishClock : -1f;
+          final.Add(new TimeManager.PlayerTimeData
+          {
+            playerName = name,
+            finishTime = f,
+            finished = (f >= 0),
+            isPlayer = r.isPlayer
+          });
         }
-        src.volume = target;
-    }
-
-    void OnFinalCountdownDone()
-    {
-        var rm = RaceManager.Instance;
-        var tm = TimeManager.Instance;
-
-        if (tm != null && rm != null)
+      }
+      var notFinished = rm.racers.Where(x => x && !x.finished && x.lapCounter && x.lapCounter.checkpointManager)
+        .OrderByDescending(x => x.lapCounter.currentLap)
+        .ThenByDescending(x => x.lapCounter.nextCheckpoint ? x.lapCounter.nextCheckpoint.checkpointId : 0)
+        .ThenBy(x =>
         {
-            // 1) DNF √§øÏ±‚
-            tm.EnsureDNFsFrom(rm.racers);
+          var lc = x.lapCounter;
+          return lc?.nextCheckpoint ? Vector3.Distance(x.transform.position, lc.nextCheckpoint.transform.position) : float.MaxValue;
+        });
 
-            // 2) √÷¡æ º¯¿ß ª˝º∫ (øœ¡÷¿⁄ °Ê πÃøœ¡÷¿⁄)
-            var dict = tm.data.ToDictionary(x => x.playerName, x => x);
-            var final = new List<TimeManager.PlayerTimeData>();
+      foreach (var r in notFinished)
+      {
+        string name = TimeManager.SafeNameOf(r);
+        if (dict.TryGetValue(name, out var p)) final.Add(p);
+        else final.Add(new TimeManager.PlayerTimeData
+        {
+          playerName = name,
+          finishTime = -1f,
+          finished = false,
+          isPlayer = r.isPlayer
+        });
+      }
+      //var final = BuildFinalResults(rm.racers, tm);
 
-            foreach (var r in rm.racers.Where(x => x && x.finished).OrderBy(x => x.finishOrder))
-            {
-                string name = TimeManager.SafeNameOf(r);
-                if (dict.TryGetValue(name, out var p))
-                    final.Add(p);
-                else
-                {
-                    float f = (r.finishClock >= 0) ? r.finishClock : -1f;
-                    final.Add(new TimeManager.PlayerTimeData
-                    {
-                        playerName = name,
-                        finishTime = f,
-                        finished = (f >= 0),
-                        isPlayer = r.isPlayer
-                    });
-                }
-            }
-            var notFinished = rm.racers.Where(x => x && !x.finished && x.lapCounter && x.lapCounter.checkpointManager)
-              .OrderByDescending(x => x.lapCounter.currentLap)
-              .ThenByDescending(x => x.lapCounter.nextCheckpoint ? x.lapCounter.nextCheckpoint.checkpointId : 0)
-              .ThenBy(x =>
-              {
-                  var lc = x.lapCounter;
-                  return lc?.nextCheckpoint ? Vector3.Distance(x.transform.position, lc.nextCheckpoint.transform.position) : float.MaxValue;
-              });
+      // 3) ÏóîÎî©Ïóê ÎÑòÍ∏∏ Îç∞Ïù¥ÌÑ∞ ÌôïÏ†ï
+      RaceDataStore.RankingData = final;
 
-            foreach (var r in notFinished)
-            {
-                string name = TimeManager.SafeNameOf(r);
-                if (dict.TryGetValue(name, out var p)) final.Add(p);
-                else final.Add(new TimeManager.PlayerTimeData
-                {
-                    playerName = name,
-                    finishTime = -1f,
-                    finished = false,
-                    isPlayer = r.isPlayer
-                });
-            }
-            //var final = BuildFinalResults(rm.racers, tm);
-
-            // 3) ø£µ˘ø° ≥—±Ê µ•¿Ã≈Õ »Æ¡§
-            RaceDataStore.RankingData = final;
-
-            // 4) √÷¡æ¿˚¿∏∑Œ ≈∏¿Ã∏” ¡§¡ˆ
-            tm.StopTimer();
-        }
+      // 4) ÏµúÏ¢ÖÏ†ÅÏúºÎ°ú ÌÉÄÏù¥Î®∏ Ï†ïÏßÄ
+      tm.StopTimer();
     }
-    void LoadEndingSceneSafe()
-    {
-        var name = string.IsNullOrWhiteSpace(endingSceneName) ? "Ending" : endingSceneName;
-        if (SceneManagers.Instance) SceneManagers.LoadScene(name);
-        else SceneManager.LoadScene(name);
-    }
+  }
+  void LoadEndingSceneSafe()
+  {
+    var name = string.IsNullOrWhiteSpace(endingSceneName) ? "Ending" : endingSceneName;
+    if (SceneManagers.Instance) SceneManagers.LoadScene(name);
+    else SceneManager.LoadScene(name);
+  }
 }

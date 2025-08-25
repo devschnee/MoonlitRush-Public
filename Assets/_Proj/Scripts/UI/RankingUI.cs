@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections.Generic;
 using PlayerTimeData = TimeManager.PlayerTimeData;
 
@@ -10,7 +10,7 @@ public class RankingUI : MonoBehaviour
     public GameObject rankingEntryPrefab;
 
     [Header("Options")]
-    public bool autoPopulateOnStart = false; // ÇÊ¿äÇÒ ¶§¸¸ Start¿¡¼­ ÀÚµ¿ Ã¤¿ò
+    public bool autoPopulateOnStart = false; // í•„ìš”í•  ë•Œë§Œ Startì—ì„œ ìë™ ì±„ì›€
 
     void Start()
     {

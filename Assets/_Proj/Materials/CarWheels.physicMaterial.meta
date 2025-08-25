@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/_Proj/Materials/CarWheels.physicMaterial.meta
 guid: a103612f8c9d113419e6de33bc1919b8
+========
+guid: 4749d5fd46b4ed84886edf511e6f2fb6
+>>>>>>>> origin/main:Assets/_Proj/Scenes/SampleScene/GameObject Profile.asset.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 13400000

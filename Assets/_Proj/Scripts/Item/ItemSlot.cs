@@ -1,59 +1,59 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class ItemSlot : MonoBehaviour
 {
-    public SlotUI[] slotUis; // slot¿ÀºêÁ§Æ®¿¡ SlotUIÄÄÆ÷³ÍÆ® ºÙÀÌ°í ÇÒ´ç
-    public UseItem useItem; // ÇÃ·¹ÀÌ¾î¿¡ UseItemÄÄÆ÷³ÍÆ® ºÙÀÌ°í ÇÒ´ç
+  public SlotUI[] slotUis; // slotì˜¤ë¸Œì íŠ¸ì— SlotUIì»´í¬ë„ŒíŠ¸ ë¶™ì´ê³  í• ë‹¹
+  public UseItem useItem; // í”Œë ˆì´ì–´ì— UseItemì»´í¬ë„ŒíŠ¸ ë¶™ì´ê³  í• ë‹¹
 
-    private ItemData[] itemSlots = new ItemData[2];
+  private ItemData[] itemSlots = new ItemData[2];
 
-    void Update()
+  void Update()
+  {
+    if (Input.GetKeyDown(KeyCode.LeftControl))
     {
-        if (Input.GetKeyDown(KeyCode.LeftControl))
-        {
-            UseFirstItem();
-        }
+      UseFirstItem();
     }
+  }
 
-    public bool AddItem(ItemData newItem)
+  public bool AddItem(ItemData newItem)
+  {
+    if (newItem == null) return false;
+    if (itemSlots[0] == null)
     {
-        if (newItem == null) return false;
-        if (itemSlots[0] == null)
-        {
-            itemSlots[0] = newItem;
-            UpdateUI();
-            return true;
-        }
-        if (itemSlots[1] == null)
-        {
-            itemSlots[1] = newItem;
-            UpdateUI();
-            return true;
-        }
-        //Debug.Log("Slots are full");
-        return false;
+      itemSlots[0] = newItem;
+      UpdateUI();
+      return true;
     }
-
-    public void UseFirstItem()
+    if (itemSlots[1] == null)
     {
-        if (itemSlots[0] == null) return;
-        useItem.currItem = itemSlots[0];
-        useItem.Use();
-
-        itemSlots[0] = itemSlots[1];
-        itemSlots[1] = null;
-
-        UpdateUI();
+      itemSlots[1] = newItem;
+      UpdateUI() ;
+      return true;
     }
+    //Debug.Log("Slots are full");
+    return false;
+  }
 
-    private void UpdateUI()
+  public void UseFirstItem()
+  {
+    if (itemSlots[0] == null) return;
+    useItem.currItem = itemSlots[0];
+    useItem.Use();
+
+    itemSlots[0] = itemSlots[1];
+    itemSlots[1] = null;
+
+    UpdateUI();
+  }
+
+  private void UpdateUI()
+  {
+    for(int i = 0; i < slotUis.Length; i++)
     {
-        for (int i = 0; i < slotUis.Length; i++)
-        {
-            if (i < slotUis.Length)
-                slotUis[i].SetItem(itemSlots[i]);
-        }
+      if(i < slotUis.Length)
+        slotUis[i].SetItem(itemSlots[i]);
     }
+  }
 }

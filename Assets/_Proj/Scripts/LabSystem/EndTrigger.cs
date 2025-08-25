@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 public class EndTrigger : MonoBehaviour
@@ -7,7 +7,7 @@ public class EndTrigger : MonoBehaviour
     FinalCount final;
     bool finalStarted = false;
 
-    readonly HashSet<RacerInfo> recorded = new HashSet<RacerInfo>();
+  readonly HashSet<RacerInfo> recorded = new HashSet<RacerInfo>();
     void Awake() => col = GetComponent<BoxCollider>();
 
     void Start()
@@ -23,36 +23,36 @@ public class EndTrigger : MonoBehaviour
         col.isTrigger = true;
     }
 
-    void OnTriggerEnter(Collider other)
+  void OnTriggerEnter(Collider other)
+  {
+    var ri = other.GetComponentInParent<RacerInfo>() ?? other.GetComponent<RacerInfo>();
+    if (!ri || !ri.lapCounter) return;
+
+    int total = RaceManager.Instance ? RaceManager.Instance.totalLaps : 2;
+    if (ri.lapCounter.currentLap < total) return;
+
+    // ì™„ì£¼ ìˆœì„œ
+    if (!ri.finished)
     {
-        var ri = other.GetComponentInParent<RacerInfo>() ?? other.GetComponent<RacerInfo>();
-        if (!ri || !ri.lapCounter) return;
-
-        int total = RaceManager.Instance ? RaceManager.Instance.totalLaps : 2;
-        if (ri.lapCounter.currentLap < total) return;
-
-        // ¿ÏÁÖ ¼ø¼­
-        if (!ri.finished)
-        {
-            ri.finished = true;
-            //if(RaceDataStore.Instance != null)
-            ri.finishOrder = ++RaceManager.Instance.finishCounter;
-        }
-
-        // ±× ¼ø°£ÀÇ Á¤È®ÇÑ ½Ã°£ Ä¸Ã³
-        if (ri.finishClock < 0 && TimeManager.Instance != null)
-            ri.finishClock = TimeManager.Instance.RaceDuration;
-
-        // ±â·Ï(Áßº¹ ¹æÁö) - AI/Player ¸ðµÎ
-        if (TimeManager.Instance != null && !recorded.Contains(ri))
-        {
-            TimeManager.Instance.RecordFinishTime(ri, ri.finishClock); //À§¿¡¼­ Ä¸Ã³µÈ °ªÀ¸·Î
-            recorded.Add(ri);
-        }
-        if (!finalStarted)
-        {
-            finalStarted = true;
-            final?.StartCountdown(final.defaultSeconds, ri);
-        }
+      ri.finished = true;
+      //if(RaceDataStore.Instance != null)
+        ri.finishOrder = ++RaceManager.Instance.finishCounter;
     }
+
+    // ê·¸ ìˆœê°„ì˜ ì •í™•í•œ ì‹œê°„ ìº¡ì²˜
+    if (ri.finishClock < 0 && TimeManager.Instance != null)
+      ri.finishClock = TimeManager.Instance.RaceDuration;
+
+    // ê¸°ë¡(ì¤‘ë³µ ë°©ì§€) - AI/Player ëª¨ë‘
+    if (TimeManager.Instance != null && !recorded.Contains(ri))
+    {
+      TimeManager.Instance.RecordFinishTime(ri, ri.finishClock); //ìœ„ì—ì„œ ìº¡ì²˜ëœ ê°’ìœ¼ë¡œ
+      recorded.Add(ri);
+    }
+    if (!finalStarted)
+    {
+      finalStarted = true;
+      final?.StartCountdown(final.defaultSeconds, ri);
+    }
+  }
 }

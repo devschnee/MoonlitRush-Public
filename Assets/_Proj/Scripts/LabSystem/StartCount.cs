@@ -1,127 +1,110 @@
-using System.Collections;
+ï»¿using System.Collections;
 using TMPro;
 using UnityEngine;
 
 public class StartCount : MonoBehaviour
-{    
-    [Header("UI")]
-    [SerializeField] private TextMeshProUGUI startCountText;
+{
+  [Header("UI")]
+  [SerializeField] private TextMeshProUGUI startCountText;
 
-    [Header("Options")]
-    public bool autoStart = false;   // ¾À ½ÃÀÛ½Ã ÀÚµ¿ Ä«¿îÆ®´Ù¿î
-    [Min(1)] public int seconds = 3; // 3,2,1
-    [Min(0)] public float goHold = 0.7f; // "GO!" Ç¥½Ã À¯Áö ½Ã°£
+  [Header("Options")]
+  public bool autoStart = false;   // ì”¬ ì‹œì‘ì‹œ ìë™ ì¹´ìš´íŠ¸ë‹¤ìš´
+  [Min(1)] public int seconds = 3; // 3,2,1
+  [Min(0)] public float goHold = 0.7f; // "GO!" í‘œì‹œ ìœ ì§€ ì‹œê°„
 
-    [Header("Audio")]
-    public AudioSource mainSource; //¿ÜºÎ¼Ò¸® È¿°úÀ½  
-    public AudioClip countClip;
-    public AudioClip startClip;
-  
+  [Header("Audio")]
+  public AudioSource mainSource; //ï¿½ÜºÎ¼Ò¸ï¿½ È¿ï¿½ï¿½ï¿½ï¿½  
+  public AudioClip countClip;
+  public AudioClip startClip;
 
+  void Start()
+  {
+    TimeManager.Instance?.StopTimer();
+    FreezeAllCars(true);                 // ì•ˆì „í•˜ê²Œ ì „ì› ì •ì§€
+    if (autoStart) Begin();
+  }
 
-    void Start()
-    {      
-            TimeManager.Instance?.StopTimer();
-        FreezeAllCars(true);                 // ¾ÈÀüÇÏ°Ô Àü¿ø Á¤Áö
-        if (autoStart) Begin();
-       
-    }
+  public void Begin()
+  {
+    if (!gameObject.activeInHierarchy) return;
+    StopAllCoroutines();
+    StartCoroutine(CountRoutine());
+  }
 
-    public void Begin()
+  public static void TryBegin()
+  {
+    var sc = FindObjectOfType<StartCount>(true);
+    if (sc != null) sc.Begin();
+  }
+  IEnumerator CountRoutine()
+  {
+    mainSource.PlayOneShot(countClip);
+    mainSource.PlayOneShot(startClip);
+    // ì¹´ìš´íŠ¸ ë™ì•ˆ ì‹œê°„ ì •ì§€ + unscaled ëŒ€ê¸°
+    Time.timeScale = 0f;
+
+    for (int i = seconds; i > 0; i--)
     {
-        if (!gameObject.activeInHierarchy) return;
-        StopAllCoroutines();
-        StartCoroutine(CountRoutine());
+      if (startCountText) startCountText.text = i.ToString();
+      mainSource.PlayOneShot(countClip);
+      yield return new WaitForSecondsRealtime(1f);
     }
 
-    public static void TryBegin()
+    if (startCountText) startCountText.text = "GO!";
+    mainSource.PlayOneShot(startClip);
+    yield return new WaitForSecondsRealtime(goHold);
+
+    // ì¸íŠ¸ë¡œê°€ ìˆìœ¼ë©´ ì¸íŠ¸ë¡œì—ê²Œ í•´ì œ/íƒ€ì´ë¨¸ ì‹œì‘ì„ ë§¡ê¸´ë‹¤
+    var intro = FindObjectOfType<IntroWaypointCamera>(true);
+    if (intro != null)
     {
-        var sc = FindObjectOfType<StartCount>(true);
-        if (sc != null) sc.Begin();
+      Time.timeScale = 1f;            // ì‹œê°„ ì¬ê°œ
+      intro.OnCountdownFinishedGo();  // ë‚´ë¶€ì—ì„œ LockAll(false)+StartTimer()
     }
-
-    IEnumerator CountRoutine()
+    else
     {
-        mainSource.PlayOneShot(countClip);
-        mainSource.PlayOneShot(startClip);
-       
-
-        // Ä«¿îÆ® µ¿¾È ½Ã°£ Á¤Áö + unscaled ´ë±â
-        Time.timeScale = 0f;              
-
-        for (int i = seconds; i > 0; i--)
-        {
-            if (startCountText) startCountText.text = i.ToString();
-            yield return new WaitForSecondsRealtime(1f);
-        }
-               
-        if (startCountText) startCountText.text = "GO!";
-        yield return new WaitForSecondsRealtime(goHold);
-
-
-        // ÀÎÆ®·Î°¡ ÀÖÀ¸¸é ÀÎÆ®·Î¿¡°Ô ÇØÁ¦/Å¸ÀÌ¸Ó ½ÃÀÛÀ» ¸Ã±ä´Ù
-        var intro = FindObjectOfType<IntroWaypointCamera>(true);
-        if (intro != null)
-        {
-            Time.timeScale = 1f;            // ½Ã°£ Àç°³
-            intro.OnCountdownFinishedGo();  // ³»ºÎ¿¡¼­ LockAll(false)+StartTimer()
-        }
-        else
-        {
-            // ÀÎÆ®·Î°¡ ¾øÀ¸¸é ¿©±â¼­ Á÷Á¢ ÇØÁ¦+Å¸ÀÌ¸Ó ½ÃÀÛ
-            Time.timeScale = 1f;
-            FreezeAllCars(false);
-            TimeManager.Instance?.ResetTimer();
-            TimeManager.Instance?.StartTimer();
-        }
-
-        if (startCountText) startCountText.text = string.Empty;
+      // ì¸íŠ¸ë¡œê°€ ì—†ìœ¼ë©´ ì—¬ê¸°ì„œ ì§ì ‘ í•´ì œ+íƒ€ì´ë¨¸ ì‹œì‘
+      Time.timeScale = 1f;
+      FreezeAllCars(false);
+      TimeManager.Instance?.ResetTimer();
+      TimeManager.Instance?.StartTimer();
     }
 
-    // --- helpers ---
-    void FreezeAllCars(bool freeze)
+    if (startCountText) startCountText.text = string.Empty;
+  }
+  void FreezeAllCars(bool freeze)
+  {
+    // Player
+    foreach (var pc in FindObjectsOfType<CarController>(true))
     {
-        // Player
-        foreach (var pc in FindObjectsOfType<CarController>(true))
-        {
-            var rb = pc.GetComponent<Rigidbody>();
-            if (freeze)
-            {
-                if (rb) { rb.velocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
-                pc.enabled = false;
-            }
-            else
-            {
-                if (rb) rb.isKinematic = false;
-                pc.enabled = true;
-            }
-        }
-        // AI
-        foreach (var ai in FindObjectsOfType<AICarController>(true))
-        {
-            var rb = ai.GetComponent<Rigidbody>();
-            if (freeze)
-            {
-                if (rb) { rb.velocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
-                ai.moveStart = false;
-                ai.enabled = false;
-            }
-            else
-            {
-                if (rb) rb.isKinematic = false;
-                ai.enabled = true;
-                ai.moveStart = true;
-            }
-        }
+      var rb = pc.GetComponent<Rigidbody>();
+      if (freeze)
+      {
+        if (rb) { rb.velocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
+        pc.enabled = false;
+      }
+      else
+      {
+        if (rb) rb.isKinematic = false;
+        pc.enabled = true;
+      }
     }
-
-   
-
-    
-        
-        
-       
-
-
-    
+    // AI
+    foreach (var ai in FindObjectsOfType<AICarController>(true))
+    {
+      var rb = ai.GetComponent<Rigidbody>();
+      if (freeze)
+      {
+        if (rb) { rb.velocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.isKinematic = true; }
+        ai.moveStart = false;
+        ai.enabled = false;
+      }
+      else
+      {
+        if (rb) rb.isKinematic = false;
+        ai.enabled = true;
+        ai.moveStart = true;
+      }
+    }
+  }
 }

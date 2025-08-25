@@ -1,56 +1,118 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Unity.VisualScripting.Member;
 
 public class NicknameInput : MonoBehaviour
 {
-    [Header("UI References")]
-    [SerializeField] TMP_InputField inputField;   
-    [SerializeField] Button OkButton;        
-    [SerializeField] GameObject panelRoot;
+  [Header("UI References")]
+  [SerializeField] TMP_InputField inputField;
+  [SerializeField] Button OkButton;
+  [SerializeField] GameObject panelRoot;
 
-    public AudioSource source;
-    public AudioClip buttonSound;
-    void OnEnable()
+  public AudioSource source;
+  public AudioClip buttonSound;
+
+  const int MaxLen = 6;
+  void OnEnable()
+  {
+    // íŒ¨ë„ì´ ì—´ë¦´ ë•Œ ì…ë ¥ì°½ ìë™ í¬ì»¤ìŠ¤ + ì»¤ì„œ ê¹œë¹¡ì„ í™œì„±í™”
+    if (inputField != null)
     {
-        // ÆĞ³ÎÀÌ ¿­¸± ¶§ ÀÔ·ÂÃ¢ ÀÚµ¿ Æ÷Ä¿½º + Ä¿¼­ ±ôºıÀÓ È°¼ºÈ­
-        if (inputField != null)
-        {
-            inputField.caretBlinkRate = 0.85f;
-            inputField.ActivateInputField();
-        }
+      inputField.characterLimit = MaxLen;
+      inputField.caretBlinkRate = 0.85f;
+      inputField.ActivateInputField();
 
-        // ¹öÆ° Å¬¸¯ ÀÌº¥Æ® ÃÊ±âÈ­ ÈÄ ´Ù½Ã ¿¬°á
-        if (OkButton != null)
-        {
-            OkButton.onClick.RemoveAllListeners();
-            OkButton.onClick.AddListener(OnSubmitNickname);
-        }
+      inputField.onValidateInput += ValidateLetterOnly;
+
+      inputField.onValueChanged.AddListener(SanitizeAndUpdate);
+      SanitizeAndUpdate(inputField.text);
+
+    }
+    if (OkButton != null)
+    {
+      OkButton.onClick.RemoveAllListeners();
+      OkButton.onClick.AddListener(OnSubmitNickname);
+    }
+  }
+  void OnDisable()
+  {
+    if (inputField != null)
+    {
+      inputField.onValidateInput -= ValidateLetterOnly;
+      inputField.onValueChanged.RemoveListener(SanitizeAndUpdate);
+    }
+  }
+  private char ValidateLetterOnly(string text, int charIndex, char addedChar)
+  {
+    return char.IsLetter(addedChar) ? addedChar : '\0';
+  }
+
+  private void SanitizeAndUpdate(string current)
+  {
+    if (inputField == null) return;
+
+    string filtered = string.IsNullOrEmpty(current)
+        ? ""
+        : new string(current.Where(char.IsLetter).ToArray());
+
+    if (filtered.Length > MaxLen)
+      filtered = filtered.Substring(0, MaxLen);
+
+    if (filtered != current)
+    {
+      // ë³€ê²½ ì•Œë¦¼ì€ ë‚´ë³´ë‚´ì§€ ì•Šê³  í…ìŠ¤íŠ¸ë§Œ êµì²´(ë£¨í”„ ë°©ì§€)
+      inputField.SetTextWithoutNotify(filtered);
+      inputField.caretPosition = filtered.Length;
     }
 
-    public void OnSubmitNickname()
+    if (OkButton != null)
+      OkButton.interactable = filtered.Length > 0;
+
+
+    // ë²„íŠ¼ í´ë¦­ ì´ë²¤íŠ¸ ì´ˆê¸°í™” í›„ ë‹¤ì‹œ ì—°ê²°
+    if (OkButton != null)
     {
-        string nick = inputField ? inputField.text.Trim() : "";
-
-        if (string.IsNullOrEmpty(nick))
-        {
-            Debug.LogWarning("´Ğ³×ÀÓÀÌ ºñ¾î ÀÖ½À´Ï´Ù.");
-            return;
-        }
-
-        // ´Ğ³×ÀÓ ÀúÀå
-        PlayerPrefs.SetString("PlayerNickname", nick);
-        PlayerPrefs.Save();
-
-        // ÆĞ³Î ´İ±â
-        if (panelRoot)
-        panelRoot.SetActive(false);
-            source.PlayOneShot(buttonSound);
-
-
-        Debug.Log($"[NicknameInput] ´Ğ³×ÀÓ ÀúÀå ¿Ï·á: {nick}");
+      OkButton.onClick.RemoveAllListeners();
+      OkButton.onClick.AddListener(OnSubmitNickname);
     }
+
+  }
+
+
+
+  public void OnSubmitNickname()
+  {
+    string nick = inputField ? inputField.text.Trim() : "";
+
+    if (string.IsNullOrEmpty(nick))
+    {
+      Debug.LogWarning("ë‹‰ë„¤ì„ì´ ë¹„ì–´ ìˆìŠµë‹ˆë‹¤.");
+      return;
+    }
+
+    // ë‹‰ë„¤ì„ ì €ì¥
+    PlayerPrefs.SetString("PlayerNickname", nick);
+    PlayerPrefs.Save();
+
+    // ì‚¬ìš´ë“œ ì¬ìƒ & íŒ¨ë„ ë‹«ê¸°
+    if (source && buttonSound)
+      StartCoroutine(ClosePanelWithSound());
+
+    Debug.Log($"[NicknameInput] ë‹‰ë„¤ì„ ì €ì¥ ì™„ë£Œ: {nick}");
+  }
+
+  private IEnumerator ClosePanelWithSound()
+  {
+    // ì†Œë¦¬ ë¨¼ì € ì¬ìƒ
+    source.PlayOneShot(buttonSound);
+
+    // ì ê¹ ëŒ€ê¸°(ì‚¬ìš´ë“œ ì¬ìƒ ì‹œê°„)
+    yield return new WaitForSeconds(0.2f);
+
+    // íŒ¨ë„ ë‹«ê¸°
+    if (panelRoot) panelRoot.SetActive(false);
+  }
 }

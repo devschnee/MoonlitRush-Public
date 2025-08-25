@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 
 public class PodiumDirector : MonoBehaviour
@@ -9,7 +9,7 @@ public class PodiumDirector : MonoBehaviour
         public SpriteRenderer basePodium;
         public Transform root;
         public TMP_Text nameText;
-
+        
     }
 
     public PodiumSlot[] slots;
@@ -29,7 +29,7 @@ public class PodiumDirector : MonoBehaviour
 
             var data = ranking[i];
             slots[i].nameText.text = data.playerName;
-
+            
 
             StartCoroutine(RiseUp(slots[i].root));
         }

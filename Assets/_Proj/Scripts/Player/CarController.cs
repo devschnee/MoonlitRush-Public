@@ -1,961 +1,961 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
 
 public class CarController : MonoBehaviour
 {
-    public float currSpeed;
+  public float currSpeed;
 
-    #region References
-    [Header("References")]
-    public CarStats stats;
-    [SerializeField] private Rigidbody rb;
-    [SerializeField] private Transform[] rayPoints;
-    [SerializeField] private LayerMask drivable;
-    [SerializeField] private Transform accelPoint;
-    [SerializeField] private GameObject[] tires = new GameObject[4];
-    [SerializeField] private GameObject[] frontTireParents = new GameObject[2];
-    [SerializeField] private TrailRenderer[] skidMarks = new TrailRenderer[2];
-    [SerializeField] private ParticleSystem[] skidFxs = new ParticleSystem[2];
-    public BoostApplyer boostApplyer;
-    #endregion
+  #region References
+  [Header("References")]
+  public CarStats stats;
+  [SerializeField] private Rigidbody rb;
+  [SerializeField] private Transform[] rayPoints;
+  [SerializeField] private LayerMask drivable;
+  [SerializeField] private Transform accelPoint;
+  [SerializeField] private GameObject[] tires = new GameObject[4];
+  [SerializeField] private GameObject[] frontTireParents = new GameObject[2];
+  [SerializeField] private TrailRenderer[] skidMarks = new TrailRenderer[2];
+  [SerializeField] private ParticleSystem[] skidFxs = new ParticleSystem[2];
+  public BoostApplyer boostApplyer;
+  #endregion
 
-    #region Suspension
-    [Header("Suspension Settings")]
-    [SerializeField] private float springStiffness = 30000f;
-    [SerializeField] private float damperStiffness = 3000f;
-    [SerializeField] private float restLen = 1f;
-    [SerializeField] private float springTravel = 0.5f;
-    [SerializeField] private float wheelRadius = 0.33f;
-    #endregion
+  #region Suspension
+  [Header("Suspension Settings")]
+  [SerializeField] private float springStiffness = 30000f;
+  [SerializeField] private float damperStiffness = 3000f;
+  [SerializeField] private float restLen = 1f;
+  [SerializeField] private float springTravel = 0.5f;
+  [SerializeField] private float wheelRadius = 0.33f;
+  #endregion
 
-    int[] wheelIsGrounded = new int[4];
-    bool isGrounded = false;
-    public bool isFinished;
-    bool hardLocked = false;
-    bool isFinishing = false;
+  int[] wheelIsGrounded = new int[4];
+  bool isGrounded = false;
+  public bool isFinished;
+  bool hardLocked = false;
+  bool isFinishing = false;
 
-    public bool isInvincible { get; set; }
+  public bool isInvincible { get; set; }
 
-    [Header("Reverse")]
-    [SerializeField] private float reverseMaxSpeed = 5f;
-    [SerializeField] private float reverseAccel = 1f;
-    private float brakePow = 3f;
+  [Header("Reverse")]
+  [SerializeField] private float reverseMaxSpeed = 5f;
+  [SerializeField] private float reverseAccel = 1f;
+  private float brakePow = 3f;
 
-    [Header("Car Settings")]
-    public float acceleration = 25f;
-    private float maxSpeed = 100f;
-    private float deceleration = 10f;
-    private float steerForce = 15f;
-    private AnimationCurve turningCurve;
-    private AnimationCurve accelCurve;
-    private float dragCoefficient = 100f;
-    private float decelLerpSpeed = 7f;   // Å¬¼ö·Ï »¡¸® µû¶ó°¨
-    [Range(0, 1)] private float coastFactor = 0.6f; // Æä´Ş offÀÏ ¶§ Á¦µ¿ ºñÀ²
-    private float minSpeedForFullDecel = 6f; // Àú¼Ó¿¡¼­´Â °¨¼Ó ÁÙÀÌ±â(m/s)
-    private float currDecelMag = 0f; // ÇöÀç Àû¿ë ÁßÀÎ °¨¼Ó Å©±â(½º¹«µù °ª)
+  [Header("Car Settings")]
+  public float acceleration = 25f;
+  private float maxSpeed = 100f;
+  private float deceleration = 10f;
+  private float steerForce = 15f;
+  private AnimationCurve turningCurve;
+  private AnimationCurve accelCurve;
+  private float dragCoefficient = 100f;
+  private float decelLerpSpeed = 7f;   // í´ìˆ˜ë¡ ë¹¨ë¦¬ ë”°ë¼ê°
+  [Range(0, 1)] private float coastFactor = 0.6f; // í˜ë‹¬ offì¼ ë•Œ ì œë™ ë¹„ìœ¨
+  private float minSpeedForFullDecel = 6f; // ì €ì†ì—ì„œëŠ” ê°ì† ì¤„ì´ê¸°(m/s)
+  private float currDecelMag = 0f; // í˜„ì¬ ì ìš© ì¤‘ì¸ ê°ì† í¬ê¸°(ìŠ¤ë¬´ë”© ê°’)
 
 
-    // ºÎ½ºÆ® È¿°ú
-    [SerializeField] private float extraDecayPerSec = 10f; // ÃÊ´ç ¾ó¸¶³ª ÁÙÀÏÁö(m/s)
-    private float extraFwd = 0f; // ÇöÀç ¿À¹ö·¹ÀÌ ÀüÁø ¼Óµµ(m/s)
+  // ë¶€ìŠ¤íŠ¸ íš¨ê³¼
+  [SerializeField] private float extraDecayPerSec = 10f; // ì´ˆë‹¹ ì–¼ë§ˆë‚˜ ì¤„ì¼ì§€(m/s)
+  private float extraFwd = 0f; // í˜„ì¬ ì˜¤ë²„ë ˆì´ ì „ì§„ ì†ë„(m/s)
 
-    #region Gear Settings
-    [Header("Gear")]
-    [SerializeField, Range(1, 5)] private int maxGears = 5;
-    [SerializeField] private float[] gearsPercents = new float[] { 0.18f, 0.36f, 0.56f, 0.78f, 1 };
-    //[SerializeField] private float[] gearAccelMultipliers = new float[] { 1.8f, 1.5f, 1.25f, 1f, 0.8f };
-    private float holdTopSpeed = 1f; // ÀÚµ¿ º¯¼Ó Àü ±â¾î º° ÃÖ°í ¼Óµµ¿¡¼­ À¯ÁöÇÏ´Â ½Ã°£(s)
-    [SerializeField, Min(0)] private float dropBeforeShiftAmount = 1f; // º¯¼Ó Àü ±â¾î º° ÃÖ°í ¼Óµµ¿¡¼­ Àá±ñ ¼Óµµ ÁÙÀÌ´Â ¼Óµµ(m/s)[½ÇÁ¦ ±â¾î º¯¼Ó ÇÏµíÀÌ <- ¼öµ¿ º¯¼Ó±â Å¬·¯Ä¡ ¶¼´Â ¼ø°£ ¼Óµµ »ìÂ¦ ÁÙ¾îµå´Â ´À³¦]
+  #region Gear Settings
+  [Header("Gear")]
+  [SerializeField, Range(1, 5)] private int maxGears = 5;
+  [SerializeField] private float[] gearsPercents = new float[] { 0.18f, 0.36f, 0.56f, 0.78f, 1 };
+  //[SerializeField] private float[] gearAccelMultipliers = new float[] { 1.8f, 1.5f, 1.25f, 1f, 0.8f };
+  private float holdTopSpeed = 1f; // ìë™ ë³€ì† ì „ ê¸°ì–´ ë³„ ìµœê³  ì†ë„ì—ì„œ ìœ ì§€í•˜ëŠ” ì‹œê°„(s)
+  [SerializeField, Min(0)] private float dropBeforeShiftAmount = 1f; // ë³€ì† ì „ ê¸°ì–´ ë³„ ìµœê³  ì†ë„ì—ì„œ ì ê¹ ì†ë„ ì¤„ì´ëŠ” ì†ë„(m/s)[ì‹¤ì œ ê¸°ì–´ ë³€ì† í•˜ë“¯ì´ <- ìˆ˜ë™ ë³€ì†ê¸° í´ëŸ¬ì¹˜ ë–¼ëŠ” ìˆœê°„ ì†ë„ ì‚´ì§ ì¤„ì–´ë“œëŠ” ëŠë‚Œ]
 
-    private int currGear = 1; // ÇöÀç ±â¾î ´Ü
-    private bool isHoldingTop = false; // ±â¾î ÃÖ°í ¼Óµµ¿¡¼­ ¼Óµµ À¯ÁöÇß´ÂÁö
-    private float holdTimer = 0f;
-    private bool didDropBeforeShift = false; // º¯¼Ó Àü ¼Óµµ ¶³¾î¶ß·È´ÂÁö
-    [SerializeField] private float downshift = 0.3f; // ÀÌÀü ±â¾î ÃÖ°í¼ÓµµÀÇ 30% ¹ØÀ¸·Î ¶³¾îÁö¸é ´Ù¿î½ÃÇÁÆ®
-    [SerializeField] private float gearBypass = 0.7f; // ºÎ½ºÆ® ½Ã Àá±ñ ±â¾î·ÎÁ÷ Áß´Ü
-    private float gearBypassEndTime = 0f;
-    private bool gearBypassed => Time.time < gearBypassEndTime;
-    #endregion
+  private int currGear = 1; // í˜„ì¬ ê¸°ì–´ ë‹¨
+  private bool isHoldingTop = false; // ê¸°ì–´ ìµœê³  ì†ë„ì—ì„œ ì†ë„ ìœ ì§€í–ˆëŠ”ì§€
+  private float holdTimer = 0f;
+  private bool didDropBeforeShift = false; // ë³€ì† ì „ ì†ë„ ë–¨ì–´ëœ¨ë ¸ëŠ”ì§€
+  [SerializeField] private float downshift = 0.3f; // ì´ì „ ê¸°ì–´ ìµœê³ ì†ë„ì˜ 30% ë°‘ìœ¼ë¡œ ë–¨ì–´ì§€ë©´ ë‹¤ìš´ì‹œí”„íŠ¸
+  [SerializeField] private float gearBypass = 0.7f; // ë¶€ìŠ¤íŠ¸ ì‹œ ì ê¹ ê¸°ì–´ë¡œì§ ì¤‘ë‹¨
+  private float gearBypassEndTime = 0f;
+  private bool gearBypassed => Time.time < gearBypassEndTime;
+  #endregion
 
-    #region Drfit Settings
-    [Header("Drift")]
-    [SerializeField] private float driftDragMultiplier = 2f;
-    [SerializeField] private float driftTransitionSpeed = 5f;
+  #region Drfit Settings
+  [Header("Drift")]
+  [SerializeField] private float driftDragMultiplier = 2f;
+  [SerializeField] private float driftTransitionSpeed = 5f;
 
-    private Vector3 currCarLocalVel = Vector3.zero;
-    private float carVelRatio = 0;
-    private float currDragCoefficient;
+  private Vector3 currCarLocalVel = Vector3.zero;
+  private float carVelRatio = 0;
+  private float currDragCoefficient;
 
-    bool readyToReverse = false;
-    [HideInInspector] public float moveInput = 0;
-    [HideInInspector] public float steerInput = 0;
-    bool isDrifting = false;
-    #endregion
+  bool readyToReverse = false;
+  [HideInInspector] public float moveInput = 0;
+  [HideInInspector] public float steerInput = 0;
+  bool isDrifting = false;
+  #endregion
 
-    #region Airbourne
-    [Header("Airbourne Settings")]
-    private float airGravity = 0.6f;
-    private float airGravityDuration = 0.3f; // °á±¹ ÀÌ°ÍÀÌ airTimer
-    [SerializeField] private float lvTorqueStrength = 8f;
-    [SerializeField] private float lvTorqueDamping = 0.6f;
-    [SerializeField] private float maxLvTorque = 200f;
+  #region Airbourne
+  [Header("Airbourne Settings")]
+  private float airGravity = 0.6f;
+  private float airGravityDuration = 0.3f; // ê²°êµ­ ì´ê²ƒì´ airTimer
+  [SerializeField] private float lvTorqueStrength = 8f;
+  [SerializeField] private float lvTorqueDamping = 0.6f;
+  [SerializeField] private float maxLvTorque = 200f;
 
-    private float airTimer = 0f;
-    private bool isAir = true;
-    #endregion
+  private float airTimer = 0f;
+  private bool isAir = true;
+  #endregion
 
-    #region Barrel Roll
-    bool isBarrelRolling = false;
-    public float barrelRollTorque = 100f;
-    public float barrelRollDuration = 1.5f;
-    #endregion
+  #region Barrel Roll
+  bool isBarrelRolling = false;
+  public float barrelRollTorque = 100f;
+  public float barrelRollDuration = 1.5f;
+  #endregion
 
-    [Header("Weight Feel (Minimal)")]
-    private float baseDownforce = 300f;
-    private float downforcePerMS = 0.6f; // ¼Óµµ(m/s)´ç Ãß°¡ ´­¸²
-    [SerializeField] private float maxDownforce = 1000f;  // °úÁ¢Áö ¹æÁö Ä¸
+  [Header("Weight Feel (Minimal)")]
+  private float baseDownforce = 300f;
+  private float downforcePerMS = 0.6f; // ì†ë„(m/s)ë‹¹ ì¶”ê°€ ëˆŒë¦¼
+  [SerializeField] private float maxDownforce = 1000f;  // ê³¼ì ‘ì§€ ë°©ì§€ ìº¡
 
-    [Header("Visuals")]
-    [SerializeField] private float tireRotSpeed = 3000f;
-    [SerializeField] private float maxSteeringAngle = 30f;
-    [SerializeField] private float minSideSkidVel = 10f;
+  [Header("Visuals")]
+  [SerializeField] private float tireRotSpeed = 3000f;
+  [SerializeField] private float maxSteeringAngle = 30f;
+  [SerializeField] private float minSideSkidVel = 10f;
 
-    #region Audio Settings
-    [Header("Audio")]
-    [SerializeField] private AudioSource engineSound;
-    // ÇÇÄ¡ ÆÄ¶ó¹ÌÅÍ
-    [SerializeField, Range(0.1f, 4f)] private float minPitch = 0.5f;
-    [SerializeField, Range(0.1f, 4f)] private float basePitch = 1.0f;  // Æò»ó½Ã
-    [SerializeField, Range(0.1f, 4f)] private float maxPitch = 3.0f;  // º¯¼Ó ½Ã ÇÇÅ©
+  #region Audio Settings
+  [Header("Audio")]
+  [SerializeField] private AudioSource engineSound;
+  // í”¼ì¹˜ íŒŒë¼ë¯¸í„°
+  [SerializeField, Range(0.1f, 4f)] private float minPitch = 0.5f;
+  [SerializeField, Range(0.1f, 4f)] private float basePitch = 1.0f;  // í‰ìƒì‹œ
+  [SerializeField, Range(0.1f, 4f)] private float maxPitch = 3.0f;  // ë³€ì† ì‹œ í”¼í¬
 
-    // º¯¼Ó ÇÇÄ¡ ¿¬Ãâ
-    [SerializeField] private float shiftBurstUpTime = 0.06f;  // 3±îÁö ¿Ã¶ó°¡´Â ½Ã°£
-    [SerializeField] private float shiftBurstHoldTime = 0.05f;  // Á¤Á¡ À¯Áö ½Ã°£
-    [SerializeField] private float shiftBurstDownTime = 0.12f;  // 1·Î ³»·Á¿À´Â ½Ã°£
-    private bool shiftingPitch = false;
+  // ë³€ì† í”¼ì¹˜ ì—°ì¶œ
+  [SerializeField] private float shiftBurstUpTime = 0.06f;  // 3ê¹Œì§€ ì˜¬ë¼ê°€ëŠ” ì‹œê°„
+  [SerializeField] private float shiftBurstHoldTime = 0.05f;  // ì •ì  ìœ ì§€ ì‹œê°„
+  [SerializeField] private float shiftBurstDownTime = 0.12f;  // 1ë¡œ ë‚´ë ¤ì˜¤ëŠ” ì‹œê°„
+  private bool shiftingPitch = false;
 
-    // ================== Skid ==================
-    [SerializeField] private AudioSource skidSound;
-    [SerializeField] float skidStartSlip = 2.0f; // ÀÌ ÀÌ»óÀÌ¸é ¼Ò¸® ½ÃÀÛ(m/s)
-    [SerializeField] float skidFullSlip = 7f; // ÀÌ ÀÌ»óÀÌ¸é ÃÖ´ë º¼·ı
-    [SerializeField] float skidFadeSpeed = 10f; // º¼·ı/ÇÇÄ¡ ·¥ÇÁ ¼Óµµ
-    [SerializeField] float skidMinVol = 0f, skidMaxVol = 0.9f;
-    [SerializeField] float skidMinPitch = 0.9f, skidMaxPitch = 1.2f;
-    #endregion
+  // ================== Skid ==================
+  [SerializeField] private AudioSource skidSound;
+  [SerializeField] float skidStartSlip = 2.0f; // ì´ ì´ìƒì´ë©´ ì†Œë¦¬ ì‹œì‘(m/s)
+  [SerializeField] float skidFullSlip = 7f; // ì´ ì´ìƒì´ë©´ ìµœëŒ€ ë³¼ë¥¨
+  [SerializeField] float skidFadeSpeed = 10f; // ë³¼ë¥¨/í”¼ì¹˜ ë¨í”„ ì†ë„
+  [SerializeField] float skidMinVol = 0f, skidMaxVol = 0.9f;
+  [SerializeField] float skidMinPitch = 0.9f, skidMaxPitch = 1.2f;
+  #endregion
 
-    void Awake()
+  void Awake()
+  {
+    rb = GetComponent<Rigidbody>();
+    ApplyStats(stats);
+    // â­ ì—”ì§„ ì˜¤ë””ì˜¤ ì‹œì‘ê°’ ê°•ì œ: ì¸íŠ¸ë¡œ ì „ì—ëŠ” í•­ìƒ êº¼ë‘ 
+    if (engineSound == null) engineSound = GetComponent<AudioSource>();
+    if (engineSound != null)
     {
-        rb = GetComponent<Rigidbody>();
-        ApplyStats(stats);
-        // ? ¿£Áø ¿Àµğ¿À ½ÃÀÛ°ª °­Á¦: ÀÎÆ®·Î Àü¿¡´Â Ç×»ó ²¨µÒ
-        if (engineSound == null) engineSound = GetComponent<AudioSource>();
+      engineSound.loop = true;
+      engineSound.playOnAwake = false; // ì”¬ ì‹œì‘ ì¦‰ì‹œ ì¬ìƒ ë°©ì§€
+      engineSound.mute = true;         // ì¸íŠ¸ë¡œ ì¤‘ì—” í•­ìƒ ë®¤íŠ¸
+      engineSound.Stop();              // í˜¹ì‹œ ì¬ìƒ ì¤‘ì´ë©´ ì •ì§€
+    }
+    if (engineSound) engineSound.pitch = basePitch;
+  }
+
+
+
+  void Update()
+  {
+    if (hardLocked) return;
+    GetPlayerInput();
+    currSpeed = rb.velocity.magnitude;
+    EngineSound();
+  }
+
+  void FixedUpdate()
+  {
+    Suspension();
+    GroundCheck();
+
+    if (!isGrounded && isAir)
+    {
+      airTimer = airGravityDuration;
+    }
+    isAir = isGrounded;
+
+    CalculateCarVelocity();
+    ApplyDownforce();
+    Movement();
+    Visuals();
+    ApplyGearHoldAndCap();
+    GearLogic();
+    ApplyReverseSpeed();
+    Airbourne();
+    float slip = CalcLateralSpeed();
+    bool shouldSkid = isGrounded && (slip > skidStartSlip) && Mathf.Abs(currCarLocalVel.z) > 2f;
+    UpdatedSkidSound(shouldSkid, slip);
+    EndBooster();
+  }
+
+  #region Stats
+  void ApplyStats(CarStats s)
+  {
+    rb.mass = s.mass;
+    rb.angularDrag = s.angularDrag;
+
+    acceleration = s.acceleration;
+    maxSpeed = s.maxSpeed;
+    deceleration = s.deceleration;
+    steerForce = s.steerForce;
+    turningCurve = s.turningCurve;
+    decelLerpSpeed = s.decelLerpSpeed;
+    coastFactor = s.coastFactor;
+    minSpeedForFullDecel = s.minSpeedForFullDecel;
+    currDecelMag = s.currDecelMag;
+
+    holdTopSpeed = s.holdTopSpeed;
+
+    baseDownforce = s.baseDownforce;
+    downforcePerMS = s.downforcePerMS;
+
+    airGravity = s.airGravity;
+    airGravityDuration = s.airGravityDuration;
+
+    accelCurve = s.accelCurve;
+
+    brakePow = s.brakePow;
+  }
+  #endregion
+
+  #region Movement
+  void Movement()
+  {
+    if (isGrounded)
+    {
+      if (Mathf.Abs(moveInput) > 0.01f)
+      {
+        Acceleration();
+        readyToReverse = false;
+      }
+      else if (moveInput < -0.01f)
+      {
+        if (currCarLocalVel.z > 0.1f) { Deceleration(); }
+        else { Acceleration(); readyToReverse = true; }
+      }
+      else
+      {
+        if (!isHoldingTop)
+          Deceleration();
+      }
+
+      Turn();
+      SidewaysDrag();
+    }
+  }
+
+  void Acceleration()
+  {
+    currDecelMag = 0f;
+    float accelPower = (moveInput >= 0f) ? acceleration : reverseAccel;
+
+    float speedRatio = Mathf.Clamp01(MathF.Abs(currCarLocalVel.z) / maxSpeed);
+    float curveMulti = accelCurve.Evaluate(speedRatio);
+    Vector3 force = accelPower * Mathf.Abs(moveInput) * Mathf.Sign(moveInput) * curveMulti * transform.forward;
+
+    // í›„ë¥œ êµ¬ë™ : ë’·ë°”í€´ idx 2ë¶€í„°
+    for (int i = 2; i < tires.Length; i++)
+    {
+      rb.AddForceAtPosition(acceleration * moveInput * transform.forward, tires[i].transform.position, ForceMode.Acceleration);
+    }
+  }
+
+  void Deceleration()
+  {
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    float dir = Mathf.Sign(lv.z);
+    float speedAbs = Mathf.Abs(lv.z);
+
+    // í˜ë‹¬ off vs ë¸Œë ˆì´í¬ íŒë‹¨
+    bool isCoast = Mathf.Abs(moveInput) <= 0.01f;
+    bool isBrake = (!isCoast) && (
+      (moveInput < -0.01f && lv.z > 0.1f) ||   //ì „ì§„ ì¤‘ í›„ì§„ ì…ë ¥
+      (moveInput > 0.01f && lv.z < -0.1f)      // í›„ì§„ ì¤‘ ì „ì§„ ì…ë ¥
+       );
+
+    // ê¸°ë³¸ ì œë™ í¬ê¸°
+    float baseDecel = deceleration * brakePow;
+
+    // ì €ì† êµ¬ê°„ì—ì„œëŠ” ê³¼ë„í•œ ê°ì† ë°©ì§€(ì†ë„ ë¹„ë¡€)
+    float lowSpeedScale = Mathf.InverseLerp(0f, minSpeedForFullDecel, speedAbs);
+
+    // ëª©í‘œ ê°ì† í¬ê¸°: ë¸Œë ˆì´í¬ì¼ ë• 100%, ì½”ìŠ¤íŠ¸ì¼ ë• coastFactor
+    float targetMag = baseDecel * Mathf.Lerp(coastFactor, 1f, isBrake ? 1f : 0f);
+
+    // ì €ì†ì¼ìˆ˜ë¡ ë” ë¶€ë“œëŸ½ê²Œ ì¤„ì´ê¸°
+    targetMag *= Mathf.Clamp01(lowSpeedScale);
+
+    // ìŠ¤ë¬´ë”© (FixedUpdate ê¸°ì¤€ìœ¼ë¡œëŠ” MoveTowardsê°€ ì•ˆì •ì )
+    currDecelMag = Mathf.MoveTowards(currDecelMag, targetMag, decelLerpSpeed * Time.fixedDeltaTime);
+
+    // ì§„í–‰ ë°˜ëŒ€ ë°©í–¥ìœ¼ë¡œ Center of Massì— í˜ ì ìš© -> Pitch/Yaw ë¶€ì‘ìš© ìµœì†Œ
+    Vector3 brake = -dir * currDecelMag * transform.forward;
+    rb.AddForce(brake, ForceMode.Acceleration);
+  }
+
+  void ApplyReverseSpeed()
+  {
+    if (currCarLocalVel.z < 0)
+    {
+      if (Mathf.Abs(currCarLocalVel.z) > reverseMaxSpeed)
+      {
+        Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+        lv.z = -reverseMaxSpeed;
+        rb.velocity = transform.TransformDirection(lv);
+      }
+    }
+  }
+
+  void Turn()
+  {
+    float currSteerStrength = isDrifting ? steerForce * 1.5f : steerForce;
+    rb.AddTorque(currSteerStrength * steerInput * turningCurve.Evaluate(Mathf.Abs(carVelRatio)) * Mathf.Sign(currCarLocalVel.z) * transform.up, ForceMode.Acceleration);
+  }
+
+  void SidewaysDrag()
+  {
+    float currSidewaysSpeed = currCarLocalVel.x;
+
+    float targetDrag = isDrifting ? dragCoefficient / driftDragMultiplier : dragCoefficient;
+    currDragCoefficient = Mathf.Lerp(currDragCoefficient, targetDrag, Time.deltaTime * driftTransitionSpeed);
+
+    float dragMagnitude = -currSidewaysSpeed * currDragCoefficient;
+    Vector3 dragForce = transform.right * dragMagnitude;
+    rb.AddForceAtPosition(dragForce, rb.worldCenterOfMass, ForceMode.Acceleration);
+  }
+  void ApplyDownforce()
+  {
+    if (!isGrounded) return; // ê³µì¤‘ì—ì„  X
+    float v = rb.velocity.magnitude;  // m/s
+    float down = Mathf.Min(baseDownforce + downforcePerMS * v, maxDownforce);
+    rb.AddForce(-transform.up * down, ForceMode.Force);
+  }
+  #endregion
+
+  #region Airbourne
+  void Airbourne()
+  {
+    if (airTimer > 0f)
+    {
+      Vector3 deltaF = rb.mass * (airGravity - 1f) * Physics.gravity;
+      rb.AddForce(deltaF, ForceMode.Force);
+      airTimer -= Time.fixedDeltaTime;
+    }
+
+    Vector3 up = transform.up;
+    Vector3 toUpAxis = Vector3.Cross(up, Vector3.up);
+    float sinAngle = toUpAxis.magnitude;
+    if (sinAngle > 1e-4f)
+    {
+      Vector3 torqueDir = toUpAxis.normalized;
+      float angle = Mathf.Asin(Mathf.Clamp(sinAngle, -1f, 1f));
+
+      Vector3 corrective = torqueDir * (lvTorqueStrength * angle) - rb.angularVelocity * lvTorqueDamping;
+
+      corrective = Vector3.ClampMagnitude(corrective, maxLvTorque);
+
+      rb.AddTorque(corrective, ForceMode.Acceleration);
+    }
+  }
+  #endregion
+
+  #region Visuals
+  void Visuals()
+  {
+    TireVisuals();
+    VFX();
+  }
+  void TireVisuals()
+  {
+    float steeringAngle = maxSteeringAngle * steerInput;
+    for (int i = 0; i < tires.Length; i++)
+    {
+      if (i < 2)
+      {
+        tires[i].transform.Rotate(Vector3.right, tireRotSpeed * carVelRatio * Time.deltaTime, Space.Self);
+
+        frontTireParents[i].transform.localEulerAngles = new Vector3(frontTireParents[i].transform.localEulerAngles.x, steeringAngle, frontTireParents[i].transform.localEulerAngles.z);
+      }
+      else
+      {
+        tires[i].transform.Rotate(Vector3.right, tireRotSpeed * carVelRatio * Time.deltaTime, Space.Self);
+      }
+    }
+  }
+
+  void VFX()
+  {
+    bool allowFwdFx = (currCarLocalVel.z > 0.1f || moveInput > 0.01f) && currCarLocalVel.z >= 0f;
+
+    bool doSkid = (isGrounded && allowFwdFx) && (isDrifting || Mathf.Abs(currCarLocalVel.x) > minSideSkidVel);
+
+    ToggleSkidMarks(doSkid);
+    ToggleSkidSmokes(doSkid);
+
+    if (boostApplyer != null && boostApplyer.fx != null)
+    {
+      boostApplyer.fx.SetEmission(allowFwdFx);
+    }
+  }
+
+  void ToggleSkidMarks(bool toggle)
+  {
+    foreach (var skidMark in skidMarks)
+    {
+      skidMark.emitting = toggle;
+    }
+  }
+
+  void ToggleSkidSmokes(bool toggle)
+  {
+    foreach (var smoke in skidFxs)
+    {
+      if (toggle)
+      {
+        smoke.Play();
+      }
+      else
+      {
+        smoke.Stop();
+      }
+    }
+  }
+  void SetTirePosition(GameObject tire, Vector3 targetPos)
+  {
+    tire.transform.position = targetPos;
+  }
+  #endregion
+
+  #region Audio
+  void EngineSound()
+  {
+    if (engineSound == null) return;
+
+    if (shiftingPitch) return;
+
+    engineSound.pitch = basePitch;
+  }
+  IEnumerator ShiftPitchBurst()
+  {
+    if (engineSound == null) yield break;
+    shiftingPitch = true;
+
+    float start = Mathf.Max(minPitch, engineSound.pitch);
+    float peak = Mathf.Max(basePitch, maxPitch);
+
+    // â†‘ ì˜¬ë¼ê°€ê¸°
+    float t = 0f;
+    while (t < shiftBurstUpTime)
+    {
+      t += Time.deltaTime;
+      engineSound.pitch = Mathf.Lerp(start, peak, t / Mathf.Max(0.0001f, shiftBurstUpTime));
+      yield return null;
+    }
+    engineSound.pitch = peak;
+
+    // ì •ì  ìœ ì§€
+    if (shiftBurstHoldTime > 0f)
+      yield return new WaitForSeconds(shiftBurstHoldTime);
+
+    // â†“ ë‚´ë ¤ì˜¤ê¸° (basePitch=1.0ìœ¼ë¡œ)
+    t = 0f;
+    while (t < shiftBurstDownTime)
+    {
+      t += Time.deltaTime;
+      engineSound.pitch = Mathf.Lerp(peak, basePitch, t / Mathf.Max(0.0001f, shiftBurstDownTime));
+      yield return null;
+    }
+    engineSound.pitch = basePitch;
+
+    shiftingPitch = false;
+  }
+
+  public void SetEngineMute(bool mute, bool stopIfMuting = true, bool restartIfUnmuted = true)
+  {
+    if (!engineSound) return;
+    engineSound.mute = mute;
+
+    if (mute && stopIfMuting && engineSound.isPlaying)
+      engineSound.Stop();
+
+    // ì¸íŠ¸ë¡œ ëë‚˜ê³  ë®¤íŠ¸ í•´ì œ ì‹œ ì¬ìƒ ë³´ì¥
+    if (!mute && restartIfUnmuted && engineSound.clip != null && !engineSound.isPlaying)
+      engineSound.Play();
+  }
+
+  public void BeginFinishSequence(float duration = 1.5f, bool hardLockAfter = true)
+  {
+    if (isFinishing) return;
+    StartCoroutine(FinishRoutine(duration, hardLockAfter));
+  }
+
+  IEnumerator FinishRoutine(float duration, bool hardLockAfter)
+  {
+    isFinishing = true;
+    isFinished = true;   // ì¡°ì‘ ì°¨ë‹¨ ì˜ë„ í”Œë˜ê·¸
+    moveInput = 0f;     // ì—‘ì…€ ì…ë ¥ ì¦‰ì‹œ ì°¨ë‹¨
+
+    Vector3 v0 = rb.velocity;
+    Vector3 w0 = rb.angularVelocity;
+
+    float vol0 = (engineSound ? engineSound.volume : 0f);
+    float pitch0 = (engineSound ? engineSound.pitch : basePitch);
+
+    float t = 0f;
+    while (t < duration)
+    {
+      float k = t / Mathf.Max(0.0001f, duration);
+
+      // ë¬¼ë¦¬ ê°ì†
+      rb.velocity = Vector3.Lerp(v0, Vector3.zero, k);
+      rb.angularVelocity = Vector3.Lerp(w0, Vector3.zero, k);
+
+      // ì—”ì§„ìŒë„ ê°™ì´ ê°€ë¼ì•‰ê¸°(í”¼ì¹˜ëŠ” minPitchìª½ìœ¼ë¡œ, ë³¼ë¥¨ì€ 0ìœ¼ë¡œ)
+      if (engineSound)
+      {
+        engineSound.pitch = Mathf.Lerp(pitch0, minPitch, k);
+        engineSound.volume = Mathf.Lerp(vol0, 0f, k);
+        if (!engineSound.isPlaying) engineSound.Play();
+      }
+
+      t += Time.unscaledDeltaTime;
+      yield return null;
+    }
+
+    // ìµœì¢… ì •ì§€
+    rb.velocity = Vector3.zero;
+    rb.angularVelocity = Vector3.zero;
+
+    // ì—”ì§„ìŒ ì •ë¦¬
+    if (engineSound)
+    {
+      engineSound.Stop();
+      engineSound.pitch = basePitch; // ë‹¤ìŒ ë ˆì´ìŠ¤ ëŒ€ë¹„ ë³µêµ¬
+      engineSound.volume = vol0;
+    }
+
+    isFinishing = false;
+
+    if (hardLockAfter)
+    {
+      // ì´í›„ ì…ë ¥/ì—…ë°ì´íŠ¸ ì™„ì „ ì°¨ë‹¨
+      hardLocked = true;
+      rb.isKinematic = true;
+      enabled = false; // CarController ë¹„í™œì„±
+    }
+  }
+  float CalcLateralSpeed()
+  {
+    Vector3 vPlanar = Vector3.ProjectOnPlane(rb.velocity, transform.up);
+    Vector3 vFwd = Vector3.Project(vPlanar, transform.forward);
+    Vector3 vSide = vPlanar - vFwd;
+    return vSide.magnitude; // m/s
+  }
+  void UpdatedSkidSound(bool on, float slip)
+  {
+    if (skidSound == null) return;
+
+    float t = on ? Mathf.InverseLerp(skidStartSlip, skidFullSlip, slip) : 0f;
+    float targetVol = Mathf.Lerp(skidMinVol, skidMaxVol, t);
+    float targetPitch = Mathf.Lerp(skidMinPitch, skidMaxPitch, t);
+
+    if (!skidSound.isPlaying && skidSound.volume > 0.01f) skidSound.Play();
+    if (skidSound.isPlaying && skidSound.volume < 0.01f) skidSound.Pause();
+  }
+  #endregion
+
+
+  #region Car Status Check
+  void GroundCheck()
+  {
+    int tempGroundedWheels = 0;
+
+    for (int i = 0; i < wheelIsGrounded.Length; i++)
+    {
+      tempGroundedWheels += wheelIsGrounded[i];
+    }
+    if (tempGroundedWheels > 1)
+    {
+      isGrounded = true;
+    }
+    else
+    {
+      isGrounded = false;
+    }
+    print(tempGroundedWheels);
+  }
+
+  void CalculateCarVelocity()
+  {
+    currCarLocalVel = transform.InverseTransformDirection(rb.velocity);
+    carVelRatio = currCarLocalVel.z / maxSpeed;
+  }
+  #endregion
+
+  void GetPlayerInput()
+  {
+    float rawInput = Input.GetAxis("Vertical");
+    steerInput = Input.GetAxis("Horizontal");
+
+    isDrifting = Mathf.Abs(currCarLocalVel.z) > 1f && Mathf.Abs(steerInput) > 0.1f && Input.GetKey(KeyCode.LeftShift);
+
+    if (rawInput < -0.01f && Mathf.Abs(currCarLocalVel.z) < 0.1f && !readyToReverse)
+    {
+      readyToReverse = true;
+      moveInput = 0;
+    }
+    else
+    {
+      if (rawInput > 0.01f)
+      {
+        readyToReverse = false;
+      }
+      moveInput = rawInput;
+    }
+  }
+
+  #region Gear Shift
+  void GearLogic()
+  {
+    // í›„ì§„í•˜ê±°ë‚˜ ì •ì§€í• ë•Œ ê¸°ì–´ ë³€ì† ì¤‘ì§€
+    if (currCarLocalVel.z <= 0)
+    {
+      currGear = 1; // ê¸°ì–´ëŠ” í•­ìƒ 1ë‹¨ìœ¼ë¡œ ìœ ì§€
+      isHoldingTop = false;
+      holdTimer = 0f;
+      didDropBeforeShift = false;
+      return;
+    }
+
+    if (gearBypassed) return;
+
+    int max = Mathf.Clamp(maxGears, 1, 5); // 5ë‹¨ ê¸°ì–´
+    if (gearsPercents.Length != max) Array.Resize(ref gearsPercents, max);
+    gearsPercents[max - 1] = 1f;
+
+    float fwdSpeed = Mathf.Max(0f, currCarLocalVel.z);
+    float speedRatio = Mathf.Clamp01(fwdSpeed / Mathf.Max(0.01f, maxSpeed));
+
+    float currTop = gearsPercents[Mathf.Clamp(currGear - 1, 0, max - 1)];
+
+    if (!isHoldingTop)
+    {
+      if (speedRatio >= currTop && currGear < max)
+      {
+        isHoldingTop = true;
+        holdTimer = holdTopSpeed;
+        didDropBeforeShift = false;
+      }
+      else if (currGear > 1)
+      {
+        // ì´ì „ ê¸°ì–´ ìƒí•œì—ì„œ downshiftê°’ë§Œí¼ ë–¨ì–´ì§€ë©´ ë‚´ë¦¼
+        float prevTop = gearsPercents[Mathf.Clamp(currGear - 2, 0, max - 1)];
+        if (speedRatio < prevTop * downshift)
+        {
+          currGear--;
+          print($"ê¸°ì–´ ë‚´ë¦¼ {currGear}");
+        }
+      }
+    }
+    else
+    {
+      holdTimer -= Time.deltaTime;
+      if (holdTimer <= 0f)
+      {
+        if (!didDropBeforeShift)
+        {
+          DropForwardSpeedByAmount(dropBeforeShiftAmount);
+          didDropBeforeShift = true;
+        }
+        currGear = Mathf.Min(currGear + 1, max);
+        print($"ê¸°ì–´ ì˜¬ë¦¼ {currGear}");
+        isHoldingTop = false;
         if (engineSound != null)
         {
-            engineSound.loop = true;
-            engineSound.playOnAwake = false; // ¾À ½ÃÀÛ Áï½Ã Àç»ı ¹æÁö
-            engineSound.mute = true;         // ÀÎÆ®·Î Áß¿£ Ç×»ó ¹ÂÆ®
-            engineSound.Stop();              // È¤½Ã Àç»ı ÁßÀÌ¸é Á¤Áö
+          //if (gearShiftSound != null) engineSound.PlayOneShot(gearShiftSound, shiftSoundVol);
+          StartCoroutine(ShiftPitchBurst());
         }
-        if (engineSound) engineSound.pitch = basePitch;
+      }
     }
+  }
 
-
-
-    void Update()
+  void DropForwardSpeedByAmount(float amount)
+  {
+    amount = Mathf.Max(0, amount);
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    if (lv.z > 0f)
     {
-        if (hardLocked) return;
-        GetPlayerInput();
-        currSpeed = rb.velocity.magnitude;
-        EngineSound();
+      lv.z = Mathf.Max(0f, lv.z - amount);
+      rb.velocity = transform.TransformDirection(lv);
     }
+  }
 
-    void FixedUpdate()
+  void ApplyGearHoldAndCap()
+  {
+    if (gearBypassed && currGear < maxGears)
+      currGear = maxGears;
+
+    int max = Mathf.Clamp(maxGears, 1, 5);
+    float currTop = gearsPercents[Mathf.Clamp(currGear - 1, 0, max - 1)];
+    float gearTopSpeed = maxSpeed * currTop;
+
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    if (lv.z > gearTopSpeed && extraFwd <= 0f)
     {
-        Suspension();
-        GroundCheck();
-
-        if (!isGrounded && isAir)
-        {
-            airTimer = airGravityDuration;
-        }
-        isAir = isGrounded;
-
-        CalculateCarVelocity();
-        ApplyDownforce();
-        Movement();
-        Visuals();
-        ApplyGearHoldAndCap();
-        GearLogic();
-        ApplyReverseSpeed();
-        Airbourne();
-        float slip = CalcLateralSpeed();
-        bool shouldSkid = isGrounded && (slip > skidStartSlip) && Mathf.Abs(currCarLocalVel.z) > 2f;
-        UpdatedSkidSound(shouldSkid, slip);
-        EndBooster();
+      lv.z = gearTopSpeed;
+      rb.velocity = transform.TransformDirection(lv);
     }
+  }
 
-    #region Stats
-    void ApplyStats(CarStats s)
+  public void EnterGearBypass(float duration, bool topGear = true)
+  {
+    gearBypassEndTime = Time.time + Mathf.Max(0.05f, duration);
+    isHoldingTop = false;
+    holdTimer = 0f;
+    didDropBeforeShift = true;
+
+    if (topGear)
+      currGear = maxGears; // ì ì‹œ ë™ì•ˆ ê¸°ì–´ 5ë‹¨ ê³ ì •
+  }
+
+  void EndBooster()
+  {
+    if (extraFwd > 0f)
     {
-        rb.mass = s.mass;
-        rb.angularDrag = s.angularDrag;
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      lv.z += extraFwd;
+      rb.velocity = transform.TransformDirection(lv);
 
-        acceleration = s.acceleration;
-        maxSpeed = s.maxSpeed;
-        deceleration = s.deceleration;
-        steerForce = s.steerForce;
-        turningCurve = s.turningCurve;
-        decelLerpSpeed = s.decelLerpSpeed;
-        coastFactor = s.coastFactor;
-        minSpeedForFullDecel = s.minSpeedForFullDecel;
-        currDecelMag = s.currDecelMag;
-
-        holdTopSpeed = s.holdTopSpeed;
-
-        baseDownforce = s.baseDownforce;
-        downforcePerMS = s.downforcePerMS;
-
-        airGravity = s.airGravity;
-        airGravityDuration = s.airGravityDuration;
-
-        accelCurve = s.accelCurve;
-
-        brakePow = s.brakePow;
+      // ìì—°ìŠ¤ëŸ½ê²Œ ê°ì†(maxSpeed ìº¡)
+      extraFwd = Mathf.Max(0f, extraFwd - extraDecayPerSec * Time.fixedDeltaTime);
     }
-    #endregion
-
-    #region Movement
-    void Movement()
+    else
     {
-        if (isGrounded)
-        {
-            if (Mathf.Abs(moveInput) > 0.01f)
-            {
-                Acceleration();
-                readyToReverse = false;
-            }
-            else if (moveInput < -0.01f)
-            {
-                if (currCarLocalVel.z > 0.1f) { Deceleration(); }
-                else { Acceleration(); readyToReverse = true; }
-            }
-            else
-            {
-                if (!isHoldingTop)
-                    Deceleration();
-            }
-
-            Turn();
-            SidewaysDrag();
-        }
-    }
-
-    void Acceleration()
-    {
-        currDecelMag = 0f;
-        float accelPower = (moveInput >= 0f) ? acceleration : reverseAccel;
-
-        float speedRatio = Mathf.Clamp01(MathF.Abs(currCarLocalVel.z) / maxSpeed);
-        float curveMulti = accelCurve.Evaluate(speedRatio);
-        Vector3 force = accelPower * Mathf.Abs(moveInput) * Mathf.Sign(moveInput) * curveMulti * transform.forward;
-
-        // ÈÄ·û ±¸µ¿ : µŞ¹ÙÄû idx 2ºÎÅÍ
-        for (int i = 2; i < tires.Length; i++)
-        {
-            rb.AddForceAtPosition(acceleration * moveInput * transform.forward, tires[i].transform.position, ForceMode.Acceleration);
-        }
-    }
-
-    void Deceleration()
-    {
-        Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-        float dir = Mathf.Sign(lv.z);
-        float speedAbs = Mathf.Abs(lv.z);
-
-        // Æä´Ş off vs ºê·¹ÀÌÅ© ÆÇ´Ü
-        bool isCoast = Mathf.Abs(moveInput) <= 0.01f;
-        bool isBrake = (!isCoast) && (
-          (moveInput < -0.01f && lv.z > 0.1f) ||   //ÀüÁø Áß ÈÄÁø ÀÔ·Â
-          (moveInput > 0.01f && lv.z < -0.1f)      // ÈÄÁø Áß ÀüÁø ÀÔ·Â
-           );
-
-        // ±âº» Á¦µ¿ Å©±â
-        float baseDecel = deceleration * brakePow;
-
-        // Àú¼Ó ±¸°£¿¡¼­´Â °úµµÇÑ °¨¼Ó ¹æÁö(¼Óµµ ºñ·Ê)
-        float lowSpeedScale = Mathf.InverseLerp(0f, minSpeedForFullDecel, speedAbs);
-
-        // ¸ñÇ¥ °¨¼Ó Å©±â: ºê·¹ÀÌÅ©ÀÏ ¶© 100%, ÄÚ½ºÆ®ÀÏ ¶© coastFactor
-        float targetMag = baseDecel * Mathf.Lerp(coastFactor, 1f, isBrake ? 1f : 0f);
-
-        // Àú¼ÓÀÏ¼ö·Ï ´õ ºÎµå·´°Ô ÁÙÀÌ±â
-        targetMag *= Mathf.Clamp01(lowSpeedScale);
-
-        // ½º¹«µù (FixedUpdate ±âÁØÀ¸·Î´Â MoveTowards°¡ ¾ÈÁ¤Àû)
-        currDecelMag = Mathf.MoveTowards(currDecelMag, targetMag, decelLerpSpeed * Time.fixedDeltaTime);
-
-        // ÁøÇà ¹İ´ë ¹æÇâÀ¸·Î Center of Mass¿¡ Èû Àû¿ë -> Pitch/Yaw ºÎÀÛ¿ë ÃÖ¼Ò
-        Vector3 brake = -dir * currDecelMag * transform.forward;
-        rb.AddForce(brake, ForceMode.Acceleration);
-    }
-
-    void ApplyReverseSpeed()
-    {
-        if (currCarLocalVel.z < 0)
-        {
-            if (Mathf.Abs(currCarLocalVel.z) > reverseMaxSpeed)
-            {
-                Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-                lv.z = -reverseMaxSpeed;
-                rb.velocity = transform.TransformDirection(lv);
-            }
-        }
-    }
-
-    void Turn()
-    {
-        float currSteerStrength = isDrifting ? steerForce * 1.5f : steerForce;
-        rb.AddTorque(currSteerStrength * steerInput * turningCurve.Evaluate(Mathf.Abs(carVelRatio)) * Mathf.Sign(currCarLocalVel.z) * transform.up, ForceMode.Acceleration);
-    }
-
-    void SidewaysDrag()
-    {
-        float currSidewaysSpeed = currCarLocalVel.x;
-
-        float targetDrag = isDrifting ? dragCoefficient / driftDragMultiplier : dragCoefficient;
-        currDragCoefficient = Mathf.Lerp(currDragCoefficient, targetDrag, Time.deltaTime * driftTransitionSpeed);
-
-        float dragMagnitude = -currSidewaysSpeed * currDragCoefficient;
-        Vector3 dragForce = transform.right * dragMagnitude;
-        rb.AddForceAtPosition(dragForce, rb.worldCenterOfMass, ForceMode.Acceleration);
-    }
-    void ApplyDownforce()
-    {
-        if (!isGrounded) return; // °øÁß¿¡¼± X
-        float v = rb.velocity.magnitude;  // m/s
-        float down = Mathf.Min(baseDownforce + downforcePerMS * v, maxDownforce);
-        rb.AddForce(-transform.up * down, ForceMode.Force);
-    }
-    #endregion
-
-    #region Airbourne
-    void Airbourne()
-    {
-        if (airTimer > 0f)
-        {
-            Vector3 deltaF = rb.mass * (airGravity - 1f) * Physics.gravity;
-            rb.AddForce(deltaF, ForceMode.Force);
-            airTimer -= Time.fixedDeltaTime;
-        }
-
-        Vector3 up = transform.up;
-        Vector3 toUpAxis = Vector3.Cross(up, Vector3.up);
-        float sinAngle = toUpAxis.magnitude;
-        if (sinAngle > 1e-4f)
-        {
-            Vector3 torqueDir = toUpAxis.normalized;
-            float angle = Mathf.Asin(Mathf.Clamp(sinAngle, -1f, 1f));
-
-            Vector3 corrective = torqueDir * (lvTorqueStrength * angle) - rb.angularVelocity * lvTorqueDamping;
-
-            corrective = Vector3.ClampMagnitude(corrective, maxLvTorque);
-
-            rb.AddTorque(corrective, ForceMode.Acceleration);
-        }
-    }
-    #endregion
-
-    #region Visuals
-    void Visuals()
-    {
-        TireVisuals();
-        VFX();
-    }
-    void TireVisuals()
-    {
-        float steeringAngle = maxSteeringAngle * steerInput;
-        for (int i = 0; i < tires.Length; i++)
-        {
-            if (i < 2)
-            {
-                tires[i].transform.Rotate(Vector3.right, tireRotSpeed * carVelRatio * Time.deltaTime, Space.Self);
-
-                frontTireParents[i].transform.localEulerAngles = new Vector3(frontTireParents[i].transform.localEulerAngles.x, steeringAngle, frontTireParents[i].transform.localEulerAngles.z);
-            }
-            else
-            {
-                tires[i].transform.Rotate(Vector3.right, tireRotSpeed * carVelRatio * Time.deltaTime, Space.Self);
-            }
-        }
-    }
-
-    void VFX()
-    {
-        bool allowFwdFx = (currCarLocalVel.z > 0.1f || moveInput > 0.01f) && currCarLocalVel.z >= 0f;
-
-        bool doSkid = (isGrounded && allowFwdFx) && (isDrifting || Mathf.Abs(currCarLocalVel.x) > minSideSkidVel);
-
-        ToggleSkidMarks(doSkid);
-        ToggleSkidSmokes(doSkid);
-
-        if (boostApplyer != null && boostApplyer.fx != null)
-        {
-            boostApplyer.fx.SetEmission(allowFwdFx);
-        }
-    }
-
-    void ToggleSkidMarks(bool toggle)
-    {
-        foreach (var skidMark in skidMarks)
-        {
-            skidMark.emitting = toggle;
-        }
-    }
-
-    void ToggleSkidSmokes(bool toggle)
-    {
-        foreach (var smoke in skidFxs)
-        {
-            if (toggle)
-            {
-                smoke.Play();
-            }
-            else
-            {
-                smoke.Stop();
-            }
-        }
-    }
-    void SetTirePosition(GameObject tire, Vector3 targetPos)
-    {
-        tire.transform.position = targetPos;
-    }
-    #endregion
-
-    #region Audio
-    void EngineSound()
-    {
-        if (engineSound == null) return;
-
-        if (shiftingPitch) return;
-
-        engineSound.pitch = basePitch;
-    }
-    IEnumerator ShiftPitchBurst()
-    {
-        if (engineSound == null) yield break;
-        shiftingPitch = true;
-
-        float start = Mathf.Max(minPitch, engineSound.pitch);
-        float peak = Mathf.Max(basePitch, maxPitch);
-
-        // ¡è ¿Ã¶ó°¡±â
-        float t = 0f;
-        while (t < shiftBurstUpTime)
-        {
-            t += Time.deltaTime;
-            engineSound.pitch = Mathf.Lerp(start, peak, t / Mathf.Max(0.0001f, shiftBurstUpTime));
-            yield return null;
-        }
-        engineSound.pitch = peak;
-
-        // Á¤Á¡ À¯Áö
-        if (shiftBurstHoldTime > 0f)
-            yield return new WaitForSeconds(shiftBurstHoldTime);
-
-        // ¡é ³»·Á¿À±â (basePitch=1.0À¸·Î)
-        t = 0f;
-        while (t < shiftBurstDownTime)
-        {
-            t += Time.deltaTime;
-            engineSound.pitch = Mathf.Lerp(peak, basePitch, t / Mathf.Max(0.0001f, shiftBurstDownTime));
-            yield return null;
-        }
-        engineSound.pitch = basePitch;
-
-        shiftingPitch = false;
-    }
-
-    public void SetEngineMute(bool mute, bool stopIfMuting = true, bool restartIfUnmuted = true)
-    {
-        if (!engineSound) return;
-        engineSound.mute = mute;
-
-        if (mute && stopIfMuting && engineSound.isPlaying)
-            engineSound.Stop();
-
-        // ÀÎÆ®·Î ³¡³ª°í ¹ÂÆ® ÇØÁ¦ ½Ã Àç»ı º¸Àå
-        if (!mute && restartIfUnmuted && engineSound.clip != null && !engineSound.isPlaying)
-            engineSound.Play();
-    }
-
-    public void BeginFinishSequence(float duration = 1.5f, bool hardLockAfter = true)
-    {
-        if (isFinishing) return;
-        StartCoroutine(FinishRoutine(duration, hardLockAfter));
-    }
-
-    IEnumerator FinishRoutine(float duration, bool hardLockAfter)
-    {
-        isFinishing = true;
-        isFinished = true;   // Á¶ÀÛ Â÷´Ü ÀÇµµ ÇÃ·¡±×
-        moveInput = 0f;     // ¿¢¼¿ ÀÔ·Â Áï½Ã Â÷´Ü
-
-        Vector3 v0 = rb.velocity;
-        Vector3 w0 = rb.angularVelocity;
-
-        float vol0 = (engineSound ? engineSound.volume : 0f);
-        float pitch0 = (engineSound ? engineSound.pitch : basePitch);
-
-        float t = 0f;
-        while (t < duration)
-        {
-            float k = t / Mathf.Max(0.0001f, duration);
-
-            // ¹°¸® °¨¼Ó
-            rb.velocity = Vector3.Lerp(v0, Vector3.zero, k);
-            rb.angularVelocity = Vector3.Lerp(w0, Vector3.zero, k);
-
-            // ¿£ÁøÀ½µµ °°ÀÌ °¡¶ó¾É±â(ÇÇÄ¡´Â minPitchÂÊÀ¸·Î, º¼·ıÀº 0À¸·Î)
-            if (engineSound)
-            {
-                engineSound.pitch = Mathf.Lerp(pitch0, minPitch, k);
-                engineSound.volume = Mathf.Lerp(vol0, 0f, k);
-                if (!engineSound.isPlaying) engineSound.Play();
-            }
-
-            t += Time.unscaledDeltaTime;
-            yield return null;
-        }
-
-        // ÃÖÁ¾ Á¤Áö
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-
-        // ¿£ÁøÀ½ Á¤¸®
-        if (engineSound)
-        {
-            engineSound.Stop();
-            engineSound.pitch = basePitch; // ´ÙÀ½ ·¹ÀÌ½º ´ëºñ º¹±¸
-            engineSound.volume = vol0;
-        }
-
-        isFinishing = false;
-
-        if (hardLockAfter)
-        {
-            // ÀÌÈÄ ÀÔ·Â/¾÷µ¥ÀÌÆ® ¿ÏÀü Â÷´Ü
-            hardLocked = true;
-            rb.isKinematic = true;
-            enabled = false; // CarController ºñÈ°¼º
-        }
-    }
-    float CalcLateralSpeed()
-    {
-        Vector3 vPlanar = Vector3.ProjectOnPlane(rb.velocity, transform.up);
-        Vector3 vFwd = Vector3.Project(vPlanar, transform.forward);
-        Vector3 vSide = vPlanar - vFwd;
-        return vSide.magnitude; // m/s
-    }
-    void UpdatedSkidSound(bool on, float slip)
-    {
-        if (skidSound == null) return;
-
-        float t = on ? Mathf.InverseLerp(skidStartSlip, skidFullSlip, slip) : 0f;
-        float targetVol = Mathf.Lerp(skidMinVol, skidMaxVol, t);
-        float targetPitch = Mathf.Lerp(skidMinPitch, skidMaxPitch, t);
-
-        if (!skidSound.isPlaying && skidSound.volume > 0.01f) skidSound.Play();
-        if (skidSound.isPlaying && skidSound.volume < 0.01f) skidSound.Pause();
-    }
-    #endregion
-
-
-    #region Car Status Check
-    void GroundCheck()
-    {
-        int tempGroundedWheels = 0;
-
-        for (int i = 0; i < wheelIsGrounded.Length; i++)
-        {
-            tempGroundedWheels += wheelIsGrounded[i];
-        }
-        if (tempGroundedWheels > 1)
-        {
-            isGrounded = true;
-        }
-        else
-        {
-            isGrounded = false;
-        }
-        print(tempGroundedWheels);
-    }
-
-    void CalculateCarVelocity()
-    {
-        currCarLocalVel = transform.InverseTransformDirection(rb.velocity);
-        carVelRatio = currCarLocalVel.z / maxSpeed;
-    }
-    #endregion
-
-    void GetPlayerInput()
-    {
-        float rawInput = Input.GetAxis("Vertical");
-        steerInput = Input.GetAxis("Horizontal");
-
-        isDrifting = Mathf.Abs(currCarLocalVel.z) > 1f && Mathf.Abs(steerInput) > 0.1f && Input.GetKey(KeyCode.LeftShift);
-
-        if (rawInput < -0.01f && Mathf.Abs(currCarLocalVel.z) < 0.1f && !readyToReverse)
-        {
-            readyToReverse = true;
-            moveInput = 0;
-        }
-        else
-        {
-            if (rawInput > 0.01f)
-            {
-                readyToReverse = false;
-            }
-            moveInput = rawInput;
-        }
-    }
-
-    #region Gear Shift
-    void GearLogic()
-    {
-        // ÈÄÁøÇÏ°Å³ª Á¤ÁöÇÒ¶§ ±â¾î º¯¼Ó ÁßÁö
-        if (currCarLocalVel.z <= 0)
-        {
-            currGear = 1; // ±â¾î´Â Ç×»ó 1´ÜÀ¸·Î À¯Áö
-            isHoldingTop = false;
-            holdTimer = 0f;
-            didDropBeforeShift = false;
-            return;
-        }
-
-        if (gearBypassed) return;
-
-        int max = Mathf.Clamp(maxGears, 1, 5); // 5´Ü ±â¾î
-        if (gearsPercents.Length != max) Array.Resize(ref gearsPercents, max);
-        gearsPercents[max - 1] = 1f;
-
-        float fwdSpeed = Mathf.Max(0f, currCarLocalVel.z);
-        float speedRatio = Mathf.Clamp01(fwdSpeed / Mathf.Max(0.01f, maxSpeed));
-
-        float currTop = gearsPercents[Mathf.Clamp(currGear - 1, 0, max - 1)];
-
-        if (!isHoldingTop)
-        {
-            if (speedRatio >= currTop && currGear < max)
-            {
-                isHoldingTop = true;
-                holdTimer = holdTopSpeed;
-                didDropBeforeShift = false;
-            }
-            else if (currGear > 1)
-            {
-                // ÀÌÀü ±â¾î »óÇÑ¿¡¼­ downshift°ª¸¸Å­ ¶³¾îÁö¸é ³»¸²
-                float prevTop = gearsPercents[Mathf.Clamp(currGear - 2, 0, max - 1)];
-                if (speedRatio < prevTop * downshift)
-                {
-                    currGear--;
-                    print($"±â¾î ³»¸² {currGear}");
-                }
-            }
-        }
-        else
-        {
-            holdTimer -= Time.deltaTime;
-            if (holdTimer <= 0f)
-            {
-                if (!didDropBeforeShift)
-                {
-                    DropForwardSpeedByAmount(dropBeforeShiftAmount);
-                    didDropBeforeShift = true;
-                }
-                currGear = Mathf.Min(currGear + 1, max);
-                print($"±â¾î ¿Ã¸² {currGear}");
-                isHoldingTop = false;
-                if (engineSound != null)
-                {
-                    //if (gearShiftSound != null) engineSound.PlayOneShot(gearShiftSound, shiftSoundVol);
-                    StartCoroutine(ShiftPitchBurst());
-                }
-            }
-        }
-    }
-
-    void DropForwardSpeedByAmount(float amount)
-    {
-        amount = Mathf.Max(0, amount);
-        Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-        if (lv.z > 0f)
-        {
-            lv.z = Mathf.Max(0f, lv.z - amount);
-            rb.velocity = transform.TransformDirection(lv);
-        }
-    }
-
-    void ApplyGearHoldAndCap()
-    {
-        if (gearBypassed && currGear < maxGears)
-            currGear = maxGears;
-
-        int max = Mathf.Clamp(maxGears, 1, 5);
-        float currTop = gearsPercents[Mathf.Clamp(currGear - 1, 0, max - 1)];
-        float gearTopSpeed = maxSpeed * currTop;
-
-        Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-        if (lv.z > gearTopSpeed && extraFwd <= 0f)
-        {
-            lv.z = gearTopSpeed;
-            rb.velocity = transform.TransformDirection(lv);
-        }
-    }
-
-    public void EnterGearBypass(float duration, bool topGear = true)
-    {
-        gearBypassEndTime = Time.time + Mathf.Max(0.05f, duration);
-        isHoldingTop = false;
-        holdTimer = 0f;
-        didDropBeforeShift = true;
-
-        if (topGear)
-            currGear = maxGears; // Àá½Ã µ¿¾È ±â¾î 5´Ü °íÁ¤
-    }
-
-    void EndBooster()
-    {
-        if (extraFwd > 0f)
-        {
-            Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-            lv.z += extraFwd;
-            rb.velocity = transform.TransformDirection(lv);
-
-            // ÀÚ¿¬½º·´°Ô °¨¼Ó(maxSpeed Ä¸)
-            extraFwd = Mathf.Max(0f, extraFwd - extraDecayPerSec * Time.fixedDeltaTime);
-        }
-        else
-        {
-            Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-            if (lv.z > maxSpeed)
-            {
-                lv.z = Mathf.Max(maxSpeed, lv.z - Time.fixedDeltaTime * deceleration);
-                rb.velocity = transform.TransformDirection(lv);
-            }
-        }
-    }
-    #endregion
-
-    #region Suspension
-    void Suspension()
-    {
-
-        for (int i = 0; i < rayPoints.Length; i++)
-        {
-            RaycastHit hit;
-            float maxDistance = restLen;
-
-            if (Physics.Raycast(rayPoints[i].position, -rayPoints[i].up, out hit, maxDistance + wheelRadius, drivable))
-            {
-                wheelIsGrounded[i] = 1;
-
-                float currSpringLen = hit.distance - wheelRadius;
-                float springCompression = (restLen - currSpringLen) / springTravel;
-
-                float springVel = Vector3.Dot(rb.GetPointVelocity(rayPoints[i].position), rayPoints[i].up);
-                float dampForce = damperStiffness * springVel;
-
-                float springForce = springStiffness * springCompression;
-
-                float netForce = springForce - dampForce;
-
-                rb.AddForceAtPosition(netForce * rayPoints[i].up, rayPoints[i].position);
-
-                SetTirePosition(tires[i], hit.point + rayPoints[i].up * wheelRadius / 2);
-                //Debug.DrawLine(rayPoints[i].position, hit.point, Color.red);
-            }
-            else
-            {
-                wheelIsGrounded[i] = 0;
-
-                SetTirePosition(tires[i], rayPoints[i].position - rayPoints[i].up * (restLen + springTravel) * 0.9f);
-                //Debug.DrawLine(rayPoints[i].position, rayPoints[i].position + (wheelRadius + maxDistance) * -rayPoints[i].up, Color.green);
-            }
-        }
-    }
-    #endregion
-
-    public IEnumerator HitByMissileCoroutine()
-    {
-        if (isInvincible) yield break;
-
-        rb.velocity *= 0.3f;
-
-        rb.AddForce(Vector3.up * 8f, ForceMode.VelocityChange);
-
-        float originDrag = rb.drag;
-        rb.drag = 0.5f;
-
-        yield return new WaitForSeconds(2f); // 2ÃÊ°£ °øÁß »óÅÂ
-
-        rb.drag = originDrag;
-    }
-
-    #region Trigger
-    void OnTriggerEnter(Collider other)
-    {
-        Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-        if (lv.z <= 0.01f)
-            return;
-
-        EnterGearBypass(gearBypass, true);
-
-        if (currCarLocalVel.z > 0.1f)
-        {
-            if (other.CompareTag("SpeedUp"))
-            {
-                //Debug.Log($"°¨Áö : {other.tag}");
-                if (boostApplyer != null)
-                {
-                    boostApplyer.ApplyBoost(2f, 1.1f, 1.5f); // ½Ã°£, Å©±â, ¼Óµµ
-                }
-              ;
-                rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration); // ½½·ÎÇÁ Å» ¶§ ¼Óµµ °¨¼Ó °­Á¦ º¸Á¤
-
-                float targetBoostSpeed = maxSpeed * 1.25f; // ³» Â÷ ÃÖ°í¼ÓµµÀÇ 125%
-                ApplyTransientOverdrive(add: maxSpeed * 0.15f, minFwdIfLower: maxSpeed * 0.5f);
-            }
-
-            if (other.CompareTag("Barrel"))
-            {
-                //Debug.Log($"°¨Áö : {other.tag}");
-                if (!isBarrelRolling)
-                    StartCoroutine(BarrelRollCoroutine());
-            }
-
-            if (other.CompareTag("BoostPad"))
-            {
-                //Debug.Log($"°¨Áö : {other.tag}");
-                if (boostApplyer != null)
-                {
-                    boostApplyer.ApplyBoost(2f, 1.1f, 2f);
-
-                    rb.AddForce(transform.forward * acceleration * 50f, ForceMode.Acceleration); // ¹°¸®ÀûÀ¸·Î ¾ÕÀ¸·Î ¹Ğ±â
-
-                    float targetBoostSpeed = maxSpeed * 1.5f; // pad ¹âÀ¸¸é ÃÖ¼Ò º¸Àå ¼Óµµ
-                    StartCoroutine(BoostPadCoroutine(targetBoostSpeed, 1.5f));
-                }
-            }
-            if (other.CompareTag("Goal"))
-            {
-                if (isFinished) return;
-
-                BeginFinishSequence(1.5f, false);
-                //StartCoroutine(SmoothStop(2f));
-                FinalCount.Instance.Finish();
-            }
-        }
-    }
-    public IEnumerator SmoothStop(float duration = 1.5f)
-    {
-        isFinished = true;
-
-        // ¿¢¼¿Àº Áï½Ã ¸·°í, ÇÚµéÀº °è¼Ó »ì¾Æ ÀÖ°Ô µÒ
-        moveInput = 0;
-
-        float timer = 0f;
-        Vector3 initVel = rb.velocity;
-        Vector3 initAngularVel = rb.angularVelocity;
-
-        while (timer < duration)
-        {
-            float t = timer / duration;
-
-            rb.velocity = Vector3.Lerp(initVel, Vector3.zero, t);
-            rb.angularVelocity = Vector3.Lerp(initAngularVel, Vector3.zero, t);
-
-            timer += Time.deltaTime;
-            yield return null;
-        }
-
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-    }
-    #endregion
-
-    #region Booster Effects
-    // ºÎ½ºÆ® È¿°ú
-    public void ApplyTransientOverdrive(float add, float minFwdIfLower = 0f)
-    {
-        // ÇöÀç ÀüÁø ¼Óµµ°¡ ³Ê¹« ³·À¸¸é ÃÖ¼Ò º¸Àå(minFwdIfLower)
-        if (minFwdIfLower > 0f)
-        {
-            Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-            lv.z = Mathf.Max(lv.z, minFwdIfLower);
-            rb.velocity = transform.TransformDirection(lv);
-        }
-
-        // ¿À¹ö·¹ÀÌ ¼Óµµ: ±âÁ¸ °Íº¸´Ù ´õ Å« °ªÀ¸·Î °»½Å(½ºÅÃ ´ë½Å ÃÖ´ñ°ª ±ÇÀå). add : Ãß°¡·Î ºÙ¿©ÁÙ ¼Óµµ
-        extraFwd = Mathf.Max(extraFwd, add);
-    }
-
-    IEnumerator BoostPadCoroutine(float targetSpeed, float duration)
-    {
-        float timer = duration;
-        while (timer > 0f)
-        {
-            Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-            lv.z = Mathf.Max(lv.z, targetSpeed);
-            rb.velocity = transform.TransformDirection(lv);
-
-            timer -= Time.fixedDeltaTime;
-            yield return new WaitForFixedUpdate();
-        }
-    }
-
-    #endregion
-
-    #region Barrel Roll Coroutine
-    IEnumerator BarrelRollCoroutine()
-    {
-        Vector3 lv = transform.InverseTransformDirection(rb.velocity);
-        if (boostApplyer != null)
-            boostApplyer.ApplyBoost(3, 1.1f, 2f);
-        rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration);
-        lv.z = Mathf.Max(lv.z, 30f);
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      if (lv.z > maxSpeed)
+      {
+        lv.z = Mathf.Max(maxSpeed, lv.z - Time.fixedDeltaTime * deceleration);
         rb.velocity = transform.TransformDirection(lv);
-
-        ApplyTransientOverdrive(add: maxSpeed * 0.15f, minFwdIfLower: maxSpeed * 0.55f);
-        yield return new WaitForSeconds(0.4f);
-        yield return new WaitUntil(() => !isGrounded);
-
-
-        isBarrelRolling = true;
-        float timer = barrelRollDuration;
-        float rollDir = Mathf.Sign(steerInput);
-
-        while (timer > 0)
-        {
-            rb.AddTorque(transform.forward * barrelRollTorque, ForceMode.Acceleration);
-            timer -= Time.deltaTime;
-            yield return null;
-        }
-        isBarrelRolling = false;
-
-        moveInput = 1f;
+      }
     }
-    #endregion
+  }
+  #endregion
 
-    void OnCollisionEnter(Collision collision)
+  #region Suspension
+  void Suspension()
+  {
+
+    for (int i = 0; i < rayPoints.Length; i++)
     {
-        if (collision.gameObject.CompareTag("Wall"))
-        {
-            Rigidbody rb = GetComponent<Rigidbody>();
-            rb.velocity *= 0.5f;
-            rb.velocity = Vector3.Reflect(rb.velocity, collision.contacts[0].normal) * 0.3f;
-        }
+      RaycastHit hit;
+      float maxDistance = restLen;
+
+      if (Physics.Raycast(rayPoints[i].position, -rayPoints[i].up, out hit, maxDistance + wheelRadius, drivable))
+      {
+        wheelIsGrounded[i] = 1;
+
+        float currSpringLen = hit.distance - wheelRadius;
+        float springCompression = (restLen - currSpringLen) / springTravel;
+
+        float springVel = Vector3.Dot(rb.GetPointVelocity(rayPoints[i].position), rayPoints[i].up);
+        float dampForce = damperStiffness * springVel;
+
+        float springForce = springStiffness * springCompression;
+
+        float netForce = springForce - dampForce;
+
+        rb.AddForceAtPosition(netForce * rayPoints[i].up, rayPoints[i].position);
+
+        SetTirePosition(tires[i], hit.point + rayPoints[i].up * wheelRadius / 2);
+        //Debug.DrawLine(rayPoints[i].position, hit.point, Color.red);
+      }
+      else
+      {
+        wheelIsGrounded[i] = 0;
+
+        SetTirePosition(tires[i], rayPoints[i].position - rayPoints[i].up * (restLen + springTravel) * 0.9f);
+        //Debug.DrawLine(rayPoints[i].position, rayPoints[i].position + (wheelRadius + maxDistance) * -rayPoints[i].up, Color.green);
+      }
     }
+  }
+  #endregion
+
+  public IEnumerator HitByMissileCoroutine()
+  {
+    if (isInvincible) yield break;
+
+    rb.velocity *= 0.3f;
+
+    rb.AddForce(Vector3.up * 8f, ForceMode.VelocityChange);
+
+    float originDrag = rb.drag;
+    rb.drag = 0.5f;
+
+    yield return new WaitForSeconds(2f); // 2ì´ˆê°„ ê³µì¤‘ ìƒíƒœ
+
+    rb.drag = originDrag;
+  }
+
+  #region Trigger
+  void OnTriggerEnter(Collider other)
+  {
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    if (lv.z <= 0.01f)
+      return;
+
+    EnterGearBypass(gearBypass, true);
+
+    if (currCarLocalVel.z > 0.1f)
+    {
+      if (other.CompareTag("SpeedUp"))
+      {
+        //Debug.Log($"ê°ì§€ : {other.tag}");
+        if (boostApplyer != null)
+        {
+          boostApplyer.ApplyBoost(2f, 1.1f, 1.5f); // ì‹œê°„, í¬ê¸°, ì†ë„
+        }
+        ;
+        rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration); // ìŠ¬ë¡œí”„ íƒˆ ë•Œ ì†ë„ ê°ì† ê°•ì œ ë³´ì •
+
+        float targetBoostSpeed = maxSpeed * 1.25f; // ë‚´ ì°¨ ìµœê³ ì†ë„ì˜ 125%
+        ApplyTransientOverdrive(add: maxSpeed * 0.15f, minFwdIfLower: maxSpeed * 0.5f);
+      }
+
+      if (other.CompareTag("Barrel"))
+      {
+        //Debug.Log($"ê°ì§€ : {other.tag}");
+        if (!isBarrelRolling)
+          StartCoroutine(BarrelRollCoroutine());
+      }
+
+      if (other.CompareTag("BoostPad"))
+      {
+        //Debug.Log($"ê°ì§€ : {other.tag}");
+        if (boostApplyer != null)
+        {
+          boostApplyer.ApplyBoost(2f, 1.1f, 2f);
+
+          rb.AddForce(transform.forward * acceleration * 50f, ForceMode.Acceleration); // ë¬¼ë¦¬ì ìœ¼ë¡œ ì•ìœ¼ë¡œ ë°€ê¸°
+
+          float targetBoostSpeed = maxSpeed * 1.5f; // pad ë°Ÿìœ¼ë©´ ìµœì†Œ ë³´ì¥ ì†ë„
+          StartCoroutine(BoostPadCoroutine(targetBoostSpeed, 1.5f));
+        }
+      }
+      if (other.CompareTag("Goal"))
+      {
+        if (isFinished) return;
+
+        BeginFinishSequence(1.5f, false);
+        //StartCoroutine(SmoothStop(2f));
+        FinalCount.Instance.Finish();
+      }
+    }
+  }
+  public IEnumerator SmoothStop(float duration = 1.5f)
+  {
+    isFinished = true;
+
+    // ì—‘ì…€ì€ ì¦‰ì‹œ ë§‰ê³ , í•¸ë“¤ì€ ê³„ì† ì‚´ì•„ ìˆê²Œ ë‘ 
+    moveInput = 0;
+
+    float timer = 0f;
+    Vector3 initVel = rb.velocity;
+    Vector3 initAngularVel = rb.angularVelocity;
+
+    while (timer < duration)
+    {
+      float t = timer / duration;
+
+      rb.velocity = Vector3.Lerp(initVel, Vector3.zero, t);
+      rb.angularVelocity = Vector3.Lerp(initAngularVel, Vector3.zero, t);
+
+      timer += Time.deltaTime;
+      yield return null;
+    }
+
+    rb.velocity = Vector3.zero;
+    rb.angularVelocity = Vector3.zero;
+  }
+  #endregion
+
+  #region Booster Effects
+  // ë¶€ìŠ¤íŠ¸ íš¨ê³¼
+  public void ApplyTransientOverdrive(float add, float minFwdIfLower = 0f)
+  {
+    // í˜„ì¬ ì „ì§„ ì†ë„ê°€ ë„ˆë¬´ ë‚®ìœ¼ë©´ ìµœì†Œ ë³´ì¥(minFwdIfLower)
+    if (minFwdIfLower > 0f)
+    {
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      lv.z = Mathf.Max(lv.z, minFwdIfLower);
+      rb.velocity = transform.TransformDirection(lv);
+    }
+
+    // ì˜¤ë²„ë ˆì´ ì†ë„: ê¸°ì¡´ ê²ƒë³´ë‹¤ ë” í° ê°’ìœ¼ë¡œ ê°±ì‹ (ìŠ¤íƒ ëŒ€ì‹  ìµœëŒ“ê°’ ê¶Œì¥). add : ì¶”ê°€ë¡œ ë¶™ì—¬ì¤„ ì†ë„
+    extraFwd = Mathf.Max(extraFwd, add);
+  }
+
+  IEnumerator BoostPadCoroutine(float targetSpeed, float duration)
+  {
+    float timer = duration;
+    while (timer > 0f)
+    {
+      Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+      lv.z = Mathf.Max(lv.z, targetSpeed);
+      rb.velocity = transform.TransformDirection(lv);
+
+      timer -= Time.fixedDeltaTime;
+      yield return new WaitForFixedUpdate();
+    }
+  }
+
+  #endregion
+
+  #region Barrel Roll Coroutine
+  IEnumerator BarrelRollCoroutine()
+  {
+    Vector3 lv = transform.InverseTransformDirection(rb.velocity);
+    if (boostApplyer != null)
+      boostApplyer.ApplyBoost(3, 1.1f, 2f);
+    rb.AddForce(transform.forward * acceleration * 30f, ForceMode.Acceleration);
+    lv.z = Mathf.Max(lv.z, 30f);
+    rb.velocity = transform.TransformDirection(lv);
+
+    ApplyTransientOverdrive(add: maxSpeed * 0.15f, minFwdIfLower: maxSpeed * 0.55f);
+    yield return new WaitForSeconds(0.4f);
+    yield return new WaitUntil(() => !isGrounded);
+
+
+    isBarrelRolling = true;
+    float timer = barrelRollDuration;
+    float rollDir = Mathf.Sign(steerInput);
+
+    while (timer > 0)
+    {
+      rb.AddTorque(transform.forward * barrelRollTorque, ForceMode.Acceleration);
+      timer -= Time.deltaTime;
+      yield return null;
+    }
+    isBarrelRolling = false;
+
+    moveInput = 1f;
+  }
+  #endregion
+
+  void OnCollisionEnter(Collision collision)
+  {
+    if (collision.gameObject.CompareTag("Wall"))
+    {
+      Rigidbody rb = GetComponent<Rigidbody>();
+      rb.velocity *= 0.5f;
+      rb.velocity = Vector3.Reflect(rb.velocity, collision.contacts[0].normal) * 0.3f;
+    }
+  }
 }

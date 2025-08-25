@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -6,81 +6,81 @@ using static TimeManager;
 
 public class RaceManager : MonoBehaviour
 {
-    public static RaceManager Instance;
+  public static RaceManager Instance;
 
-    [Header("Race")]
-    public int totalLaps = 2;
-    public List<RacerInfo> racers = new List<RacerInfo>();
-    public EndTrigger endTrigger;
+  [Header("Race")]
+  public int totalLaps = 2;
+  public List<RacerInfo> racers = new List<RacerInfo>();
+  public EndTrigger endTrigger;
 
-    [Header("UI (optional)")]
-    public TextMeshProUGUI lapText;
-    public TextMeshProUGUI timeText;
+  [Header("UI (optional)")]
+  public TextMeshProUGUI lapText;
+  public TextMeshProUGUI timeText;
 
-    public int finishCounter = 0; //¿ÏÁÖ ¼ø¼­ ºÎ¿©¿ë
-    void Awake()
+  public int finishCounter = 0; //ì™„ì£¼ ìˆœì„œ ë¶€ì—¬ìš©
+  void Awake()
+  {
+    if (Instance == null) Instance = this;
+    else Destroy(gameObject);
+  }
+
+  public void RegisterRacer(RacerInfo racer)
+  {
+    if (racer && !racers.Contains(racer))
+      racers.Add(racer);
+  }
+
+  void Update() => UpdateRanking();
+
+  public void ActivateEndTrigger()
+  {
+    if (endTrigger) endTrigger.ActiveTrigger();
+  }
+
+  void UpdateRanking()
+  {
+    racers = racers
+        .Where(r => r && r.lapCounter && r.lapCounter.checkpointManager)
+        .ToList();
+
+    racers.Sort((a, b) =>
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
+      // ì™„ì£¼ì ìš°ì„  + finishOrder (ì‘ì„ìˆ˜ë¡ ë¨¼ì € ë“¤ì–´ì˜´)
+      if (a.finished != b.finished) return a.finished ? -1 : 1;
+      if (a.finished && b.finished)
+      {
+        int cmpF = a.finishOrder.CompareTo(b.finishOrder);
+        if (cmpF != 0) return cmpF;
+      }
 
-    public void RegisterRacer(RacerInfo racer)
-    {
-        if (racer && !racers.Contains(racer))
-            racers.Add(racer);
-    }
+      // ë© ìˆ˜ (ë‚´ë¦¼ì°¨ìˆœ)
+      int lapA = a.lapCounter?.currentLap ?? 0;
+      int lapB = b.lapCounter?.currentLap ?? 0;
+      int cmpLap = lapB.CompareTo(lapA);
+      if (cmpLap != 0) return cmpLap;
 
-    void Update() => UpdateRanking();
+      // ë‹¤ìŒ ì²´í¬í¬ì¸íŠ¸ ì¸ë±ìŠ¤ (ë‚´ë¦¼ì°¨ìˆœ: í° ê°’ì´ ì•)
+      int cpA = a.lapCounter?.nextCheckpoint ? a.lapCounter.nextCheckpoint.checkpointId : 0;
+      int cpB = b.lapCounter?.nextCheckpoint ? b.lapCounter.nextCheckpoint.checkpointId : 0;
+      int cmpCp = cpB.CompareTo(cpA);
+      if (cmpCp != 0) return cmpCp;
 
-    public void ActivateEndTrigger()
-    {
-        if (endTrigger) endTrigger.ActiveTrigger();
-    }
-
-    void UpdateRanking()
-    {
-        racers = racers
-            .Where(r => r && r.lapCounter && r.lapCounter.checkpointManager)
-            .ToList();
-
-        racers.Sort((a, b) =>
-        {
-            // ¿ÏÁÖÀÚ ¿ì¼± + finishOrder (ÀÛÀ»¼ö·Ï ¸ÕÀú µé¾î¿È)
-            if (a.finished != b.finished) return a.finished ? -1 : 1;
-            if (a.finished && b.finished)
-            {
-                int cmpF = a.finishOrder.CompareTo(b.finishOrder);
-                if (cmpF != 0) return cmpF;
-            }
-
-            // ·¦ ¼ö (³»¸²Â÷¼ø)
-            int lapA = a.lapCounter?.currentLap ?? 0;
-            int lapB = b.lapCounter?.currentLap ?? 0;
-            int cmpLap = lapB.CompareTo(lapA);
-            if (cmpLap != 0) return cmpLap;
-
-            // ´ÙÀ½ Ã¼Å©Æ÷ÀÎÆ® ÀÎµ¦½º (³»¸²Â÷¼ø: Å« °ªÀÌ ¾Õ)
-            int cpA = a.lapCounter?.nextCheckpoint ? a.lapCounter.nextCheckpoint.checkpointId : 0;
-            int cpB = b.lapCounter?.nextCheckpoint ? b.lapCounter.nextCheckpoint.checkpointId : 0;
-            int cmpCp = cpB.CompareTo(cpA);
-            if (cmpCp != 0) return cmpCp;
-
-            // ´ÙÀ½ Ã¼Å©Æ÷ÀÎÆ®±îÁö °Å¸® (¿À¸§Â÷¼ø: °¡±î¿î ÂÊÀÌ ¾Õ)
-            float dA = float.MaxValue, dB = float.MaxValue;
-            if (a.lapCounter?.nextCheckpoint)
-                dA = Vector3.Distance(a.transform.position, a.lapCounter.nextCheckpoint.transform.position);
-            if (b.lapCounter?.nextCheckpoint)
-                dB = Vector3.Distance(b.transform.position, b.lapCounter.nextCheckpoint.transform.position);
-            return dA.CompareTo(dB);
-        });
-        // µî¼ö ¹øÈ£ ºÎ¿©
-        for (int i = 0; i < racers.Count; i++)
-            racers[i].currentRank = i + 1;
-    }
-
-    public void SaveRanking()
-    {
-        racers = racers.Where(r => r != null).ToList();
-        racers.Sort((a, b) => a.currentRank.CompareTo(b.currentRank));
-    }
+      // ë‹¤ìŒ ì²´í¬í¬ì¸íŠ¸ê¹Œì§€ ê±°ë¦¬ (ì˜¤ë¦„ì°¨ìˆœ: ê°€ê¹Œìš´ ìª½ì´ ì•)
+      float dA = float.MaxValue, dB = float.MaxValue;
+      if (a.lapCounter?.nextCheckpoint)
+        dA = Vector3.Distance(a.transform.position, a.lapCounter.nextCheckpoint.transform.position);
+      if (b.lapCounter?.nextCheckpoint)
+        dB = Vector3.Distance(b.transform.position, b.lapCounter.nextCheckpoint.transform.position);
+      return dA.CompareTo(dB);
+    });
+    // ë“±ìˆ˜ ë²ˆí˜¸ ë¶€ì—¬
+    for (int i = 0; i < racers.Count; i++)
+      racers[i].currentRank = i + 1;
+  }
+  
+  public void SaveRanking()
+  {
+    racers = racers.Where(r => r != null).ToList();
+    racers.Sort((a, b) => a.currentRank.CompareTo(b.currentRank));
+  }
 }

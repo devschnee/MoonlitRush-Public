@@ -1,73 +1,64 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
+Ôªøusing UnityEngine;
 
 public class ExitStartButtonUI : MonoBehaviour
-{   
-    public GameObject exit;
-    public CarSelectionUI carSelectionUI;
+{
+  public GameObject exit;
+  public CarSelectionUI carSelectionUI;
 
-   [SerializeField] private AudioSource source;
-    public AudioClip buttonSound;
-    
+  [SerializeField] private AudioSource source;
+  public AudioClip buttonSound;
 
-    private void Awake()
-    {       
-            exit.SetActive(false);
-    }
+  private void Awake()
+  {
+    exit.SetActive(false);
+  }
 
-    private void Update()
+  private void Update()
+  {
+    if (Input.GetKeyUp(KeyCode.Escape))
     {
-        if (Input.GetKeyUp(KeyCode.Escape))
-        {
-            OPExitPanel();
-        }
+      OPExitPanel();
     }
+  }
 
-    public void GameExit()
-    {
-        Debug.Log("∞‘¿” ¡æ∑· ø‰√ª");        
-        Application.Quit();
-        source.PlayOneShot(buttonSound);
-    }
+  public void GameExit()
+  {
+    //Debug.Log("Í≤åÏûÑ Ï¢ÖÎ£å ÏöîÏ≤≠");        
+    Application.Quit();
+    source.PlayOneShot(buttonSound);
+  }
 
-    public void OPExitPanel()
-    {
-        exit.SetActive(true);
-        source.PlayOneShot(buttonSound);
-    }
-    
-   public void CloseExitPanel()
-    {
-        exit.SetActive(false);
-        source.PlayOneShot(buttonSound);
-    }
+  public void OPExitPanel()
+  {
+    exit.SetActive(true);
+    source.PlayOneShot(buttonSound);
+  }
 
-    //∑Œ∫ÒøÎ
-    public void GameStart()
-    {
-        // º±≈√ ¡§∫∏ ¿˙¿Â
-        carSelectionUI.SaveSelection();
-        UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
-        source.PlayOneShot(buttonSound);
-    }
+  public void CloseExitPanel()
+  {
+    exit.SetActive(false);
+    source.PlayOneShot(buttonSound);
+  }
 
-    //∞·∞˙√¢ø°º≠ ¿ÁΩ√¿€
-    public void ReGameStart()
-    {
-        UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
-        source.PlayOneShot(buttonSound);
-    }
-        
-    public void Lobby() //∑Œ∫Ò∑Œ ∞°±‚ π◊ µπæ∆∞°±‚
-    {
-        UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
-        source.PlayOneShot(buttonSound);
-    }
+  //Î°úÎπÑÏö©
+  public void GameStart()
+  {
+    // ÏÑ†ÌÉù Ï†ïÎ≥¥ Ï†ÄÏû•
+    carSelectionUI.SaveSelection();
+    UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
+    source.PlayOneShot(buttonSound);
+  }
 
-   
+  //Í≤∞Í≥ºÏ∞ΩÏóêÏÑú Ïû¨ÏãúÏûë
+  public void ReGameStart()
+  {
+    UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
+    source.PlayOneShot(buttonSound);
+  }
 
-
+  public void Lobby() //Î°úÎπÑÎ°ú Í∞ÄÍ∏∞ Î∞è ÎèåÏïÑÍ∞ÄÍ∏∞
+  {
+    UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
+    source.PlayOneShot(buttonSound);
+  }
 }

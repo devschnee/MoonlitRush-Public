@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/_Proj/Scenes/SampleScene/GameObject Profile.asset.meta
 guid: 4749d5fd46b4ed84886edf511e6f2fb6
+========
+guid: a55b5a97430787d4885ccc04d1ecf47f
+>>>>>>>> origin/main:Assets/_Proj/Fonts/Aldrich-Regular SDF 1.asset.meta
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 11400000

@@ -1,189 +1,188 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 public enum Team { Player, AI }
 public class MissileProj : MonoBehaviour
 {
-    private Rigidbody rb;
-    private GameObject me;
-    private Transform target;
+  private Rigidbody rb;
+  private GameObject me;
+  private Transform target;
 
-    public float speed;
-    public float lifeTime;
-    public float detectRadius = 30f;
-    private GameObject explosionFx;
+  public float speed;
+  public float lifeTime;
+  public float detectRadius = 30f;
+  private GameObject explosionFx;
 
-    private Vector3 launchFwd = Vector3.zero;
-    [SerializeField] bool inheritShootervelocity = true;
-    [SerializeField] float inheritDecayPerSec = 0f;
-    Vector3 inheritedVel;
+  private Vector3 launchFwd = Vector3.zero;
+  [SerializeField] bool inheritShootervelocity = true;
+  [SerializeField] float inheritDecayPerSec = 0f;
+  Vector3 inheritedVel;
 
-    [SerializeField] private bool debugTestMode = false; // ¾À¿¡ µĞ Å×½ºÆ®¿ëÀÌ¸é Ã¼Å©
+  [SerializeField] private bool debugTestMode = false; // ì”¬ì— ë‘” í…ŒìŠ¤íŠ¸ìš©ì´ë©´ ì²´í¬
 
 
-    void Start()
+  void Start()
+  {
+    rb = GetComponent<Rigidbody>();
+    
+    if (debugTestMode)
     {
-        rb = GetComponent<Rigidbody>();
-
-        if (debugTestMode)
-        {
-            // Á¦ÀÚ¸® °íÁ¤, Init() ¾È ºÒ·Áµµ Ãæµ¹ »ì¾ÆÀÖÀ½
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                rb.velocity = Vector3.zero;
-            }
-            me = null; // ÀÚ±â ÀÚ½Å ÆÇÁ¤ ¾ø¾Ú
-        }
+      // ì œìë¦¬ ê³ ì •, Init() ì•ˆ ë¶ˆë ¤ë„ ì¶©ëŒ ì‚´ì•„ìˆìŒ
+      if (rb != null)
+      {
+        rb.isKinematic = true;
+        rb.velocity = Vector3.zero;
+      }
+      me = null; // ìê¸° ìì‹  íŒì • ì—†ì•°
     }
-    public void Init(float power, float duration, GameObject shooter, GameObject fxPrefab, Transform fwdBasis = null)
-    {
-        if (rb == null) rb = GetComponent<Rigidbody>();
-        if (rb != null) rb.isKinematic = false;
-        rb = GetComponent<Rigidbody>();
-        speed = power; // ItemData¿¡¼­ µ¤¾î¾¸
-        me = shooter; // ItemData¿¡¼­ µ¤¾î¾¸
-        lifeTime = duration;
-        explosionFx = fxPrefab;
+  }
+  public void Init(float power, float duration, GameObject shooter, GameObject fxPrefab, Transform fwdBasis = null)
+  {
+    if(rb==null) rb = GetComponent<Rigidbody>();
+    if (rb != null) rb.isKinematic = false;
+    rb = GetComponent<Rigidbody>();
+    speed = power; // ItemDataì—ì„œ ë®ì–´ì”€
+    me = shooter; // ItemDataì—ì„œ ë®ì–´ì”€
+    lifeTime = duration;
+    explosionFx = fxPrefab;
 
-        var myCols = GetComponentsInChildren<Collider>();
-        var shootCols = shooter.GetComponentsInChildren<Collider>();
-        foreach (var mc in myCols)
-            foreach (var sc in shootCols)
-                Physics.IgnoreCollision(mc, sc);
+    var myCols = GetComponentsInChildren<Collider>();
+    var shootCols = shooter.GetComponentsInChildren<Collider>();
+    foreach (var mc in myCols)
+      foreach (var sc in shootCols)
+        Physics.IgnoreCollision(mc, sc);
 
-        Transform basis = fwdBasis != null ? fwdBasis : shooter.transform;
-        launchFwd = basis.TransformDirection(Vector3.forward).normalized;
+    Transform basis = fwdBasis != null ? fwdBasis : shooter.transform;
+    launchFwd = basis.TransformDirection(Vector3.forward).normalized;
 
-        var shooterRb = shooter.GetComponentInParent<Rigidbody>();
-        inheritedVel = (inheritShootervelocity && shooterRb != null) ? shooterRb.velocity : Vector3.zero;
+    var shooterRb = shooter.GetComponentInParent<Rigidbody>();
+    inheritedVel = (inheritShootervelocity && shooterRb != null) ? shooterRb.velocity : Vector3.zero;
 
-        if (rb != null)
-            rb.velocity = inheritedVel + launchFwd * speed;
+    if(rb!= null)
+      rb.velocity = inheritedVel + launchFwd * speed;
 
-        var lookDir = (rb != null && rb.velocity.sqrMagnitude > 0.01f) ? rb.velocity : launchFwd;
-        transform.rotation = Quaternion.LookRotation(lookDir, Vector3.up);
+    var lookDir = (rb != null && rb.velocity.sqrMagnitude > 0.01f) ? rb.velocity : launchFwd;
+    transform.rotation = Quaternion.LookRotation(lookDir, Vector3.up);
 
-        Destroy(gameObject, lifeTime);
-    }
+    Destroy(gameObject, lifeTime);
+  }
 
-    void FixedUpdate()
-    {
-        if (rb == null) return;
+  void FixedUpdate()
+  {
+    if (rb == null) return;
 
-        //Debug.Log($"¹Ì»çÀÏ ¼Óµµ: {rb.velocity.magnitude}");
+        //Debug.Log($"ë¯¸ì‚¬ì¼ ì†ë„: {rb.velocity.magnitude}");
 
-        Vector3 fwd = (rb.velocity.sqrMagnitude > 0.01f) ? rb.velocity.normalized
+        Vector3 fwd = (rb.velocity.sqrMagnitude > 0.01f) ? rb.velocity.normalized 
       : (launchFwd != Vector3.zero ? launchFwd : transform.forward);
 
-        // °¡Àå °¡±î¿î ´ë»ó Å½»ö
-        // ÁÖÃ¼ Player => AIÅ½»ö
-        // ÁÖÃ¼ AI => AI + Player Å½»ö
-        if (target == null)
-        {
-            List<GameObject> racers = new List<GameObject>();
-
-            bool shooterIsPlayer = (me != null && me.CompareTag("Player"));
-            bool shooterIsAI = (me != null && me.CompareTag("AIPlayer"));
-
-            if (shooterIsPlayer)
-            {
-                racers.AddRange(GameObject.FindGameObjectsWithTag("AIPlayer"));
-            }
-            else if (shooterIsAI)
-            {
-                var allAIs = GameObject.FindGameObjectsWithTag("AIPlayer");
-                foreach (var ai in allAIs)
-                {
-                    if (me != null && (ai == me || ai.transform.IsChildOf(me.transform))) continue; // ÀÚ½Å Á¦¿Ü
-                    racers.Add(ai);
-                }
-
-                var playerGO = GameObject.FindGameObjectWithTag("Player");
-                if (playerGO != null) racers.Add(playerGO);
-            }
-            else
-            {
-                racers.AddRange(GameObject.FindGameObjectsWithTag("AIPlayer"));
-            }
-            float minDist = float.MaxValue;
-
-            float cosFov = Mathf.Cos(75f * Mathf.Deg2Rad);
-
-            foreach (var racer in racers)
-            {
-                if (racer == null) continue;
-
-                if (me != null && (racer == me || racer.transform.IsChildOf(me.transform))) continue;
-                float dist = Vector3.Distance(transform.position, racer.transform.position);
-                if (dist > detectRadius) continue;
-
-                Vector3 toTarget = (racer.transform.position - transform.position).normalized;
-                float dot = Vector3.Dot(fwd, toTarget);
-
-                // Àü¹æ 75µµ ÀÌ³»¸¸ Å½Áö
-                if (dot > Mathf.Cos(75f * Mathf.Deg2Rad) && dist < minDist)
-                {
-                    target = racer.transform;
-                    minDist = dist;
-                }
-            }
-        }
-        Vector3 baseVel = inheritedVel;
-
-        // Å¸±ê ¹ß°ß ½Ã ÃßÀû
-        if (target != null)
-        {
-            Vector3 targetPos = target.position + Vector3.up;
-            Vector3 dir = (targetPos - transform.position).normalized;
-            rb.velocity = baseVel + dir * speed;
-            transform.rotation = Quaternion.LookRotation(rb.velocity, Vector3.up);
-        }
-        // Å¸°Ù ¾øÀ¸¸é Á÷¼±
-        else
-        {
-            rb.velocity = baseVel + launchFwd * speed;
-
-            if (rb.velocity.sqrMagnitude > 0.1f)
-            {
-                transform.rotation = Quaternion.LookRotation(rb.velocity, Vector3.up);
-            }
-        }
-    }
-
-    void OnCollisionEnter(Collision collision)
+    // ê°€ì¥ ê°€ê¹Œìš´ ëŒ€ìƒ íƒìƒ‰
+    // ì£¼ì²´ Player => AIíƒìƒ‰
+    // ì£¼ì²´ AI => AI + Player íƒìƒ‰
+    if (target == null)
     {
-        if (me != null && (collision.transform == me.transform || collision.transform.IsChildOf(me.transform))) return;
+      List<GameObject> racers = new List<GameObject>();
 
-        print("Ãæµ¹ " + collision.gameObject.name);
+      bool shooterIsPlayer = (me != null && me.CompareTag("Player"));
+      bool shooterIsAI = (me != null && me.CompareTag("AIPlayer"));
 
-        // ¹Ì»çÀÏ ¸Â¾ÒÀ» ¶§
-        var car = collision.gameObject.GetComponentInParent<CarController>();
-        var aiCar = collision.gameObject.GetComponentInParent<AICarController>();
-
-        if (collision.gameObject == me) return;
-
-        if (car != null)
+      if (shooterIsPlayer)
+      {
+        racers.AddRange(GameObject.FindGameObjectsWithTag("AIPlayer"));
+      }
+      else if (shooterIsAI) {
+        var allAIs = GameObject.FindGameObjectsWithTag("AIPlayer");
+        foreach (var ai in allAIs)
         {
-            // CarController¿¡ ÀÖ´Â Ãæµ¹ È¿°ú ¹ßµ¿
-            car.StartCoroutine(car.HitByMissileCoroutine());
+          if (me != null &&( ai == me || ai.transform.IsChildOf(me.transform))) continue; // ìì‹  ì œì™¸
+          racers.Add(ai);
         }
 
-        if (aiCar != null)
-        {
-            aiCar.StartCoroutine(aiCar.HitByMissileCoroutine());
-        }
+        var playerGO = GameObject.FindGameObjectWithTag("Player");
+        if (playerGO != null) racers.Add(playerGO);
+      }
+      else
+      {
+        racers.AddRange(GameObject.FindGameObjectsWithTag("AIPlayer"));
+      }
+      float minDist = float.MaxValue;
 
-        if (explosionFx != null)
+      float cosFov = Mathf.Cos(75f * Mathf.Deg2Rad);
+
+      foreach (var racer in racers)
+      {
+        if(racer == null) continue;
+
+        if (me != null && (racer == me || racer.transform.IsChildOf(me.transform))) continue;
+        float dist = Vector3.Distance(transform.position, racer.transform.position);
+        if (dist > detectRadius) continue;
+        
+        Vector3 toTarget = (racer.transform.position - transform.position).normalized;
+        float dot = Vector3.Dot(fwd, toTarget);
+
+        // ì „ë°© 75ë„ ì´ë‚´ë§Œ íƒì§€
+        if (dot > Mathf.Cos(75f * Mathf.Deg2Rad) && dist < minDist)
         {
-            print("explosion fx");
-            GameObject fx = Instantiate(explosionFx, transform.position, Quaternion.identity);
-            Destroy(fx, 2f);
+          target = racer.transform;
+          minDist = dist;
         }
-        else
-        {
-            print("explosion fx is null");
-        }
-        Destroy(gameObject);
+      }
     }
+    Vector3 baseVel = inheritedVel;
+
+    // íƒ€ê¹ƒ ë°œê²¬ ì‹œ ì¶”ì 
+    if (target != null)
+    {
+      Vector3 targetPos = target.position + Vector3.up;
+      Vector3 dir = (targetPos - transform.position).normalized;
+      rb.velocity = baseVel + dir * speed;
+      transform.rotation = Quaternion.LookRotation(rb.velocity, Vector3.up);
+    }
+    // íƒ€ê²Ÿ ì—†ìœ¼ë©´ ì§ì„ 
+    else
+    {
+      rb.velocity = baseVel + launchFwd * speed;
+
+      if (rb.velocity.sqrMagnitude > 0.1f)
+      {
+        transform.rotation = Quaternion.LookRotation(rb.velocity, Vector3.up);
+      }
+    }
+  }
+
+  void OnCollisionEnter(Collision collision)
+  {
+    if (me != null && (collision.transform == me.transform || collision.transform.IsChildOf(me.transform))) return;
+
+    print("ì¶©ëŒ " + collision.gameObject.name);
+
+    // ë¯¸ì‚¬ì¼ ë§ì•˜ì„ ë•Œ
+    var car = collision.gameObject.GetComponentInParent<CarController>();
+    var aiCar = collision.gameObject.GetComponentInParent<AICarController>();
+
+    if (collision.gameObject == me) return;
+
+    if (car != null)
+    {
+      // CarControllerì— ìˆëŠ” ì¶©ëŒ íš¨ê³¼ ë°œë™
+      car.StartCoroutine(car.HitByMissileCoroutine());
+    }
+
+    if (aiCar != null)
+    {
+      aiCar.StartCoroutine(aiCar.HitByMissileCoroutine());
+    }
+
+    if (explosionFx != null)
+    {
+      print("explosion fx");
+      GameObject fx = Instantiate(explosionFx, transform.position, Quaternion.identity);
+      Destroy(fx, 2f);
+    }
+    else
+    {
+      print("explosion fx is null");
+    }
+    Destroy(gameObject);
+  }
 }

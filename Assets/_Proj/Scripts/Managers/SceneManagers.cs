@@ -1,49 +1,49 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Use it by attaching it to an empty game object.
 public class SceneManagers : MonoBehaviour
 {
-    public static SceneManagers Instance;
+  public static SceneManagers Instance;
 
-    void Awake()
+  void Awake()
+  {
+    if(Instance == null)
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject); // Duplicate prevention
-        }
+      Instance = this;
     }
-
-    // Load by scene name
-    public static void LoadScene(string sceneName)
+    else
     {
-        if (!string.IsNullOrEmpty(sceneName))
-            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+      Destroy(gameObject); // Duplicate prevention
     }
+  }
 
-    // Load by scene index
-    public void LoadScene(int sceneIdx)
-    {
-        if (sceneIdx >= 0 && sceneIdx < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings)
-            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneIdx);
-    }
+  // Load by scene name
+  public static void LoadScene(string sceneName)
+  {
+    if(!string.IsNullOrEmpty(sceneName))
+      SceneManager.LoadScene(sceneName);
+  }
 
-    // Reload current scene
-    public void ReloadScene()
-    {
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
-    }
+  // Load by scene index
+  public void LoadScene(int sceneIdx)
+  {
+    if(sceneIdx >= 0 && sceneIdx < SceneManager.sceneCountInBuildSettings)
+      SceneManager.LoadScene(sceneIdx);
+  }
 
-    public void QuitGame()
-    {
+  // Reload current scene
+  public void ReloadScene()
+  {
+    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+  }
+
+  public void QuitGame()
+  {
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
+    UnityEditor.EditorApplication.isPlaying = false;
 #else
     Application.Quit();
 #endif
-    }
+  }
 }

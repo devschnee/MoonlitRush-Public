@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/_Proj/Scenes/Ending.unity.meta
 guid: d4505545cd5746646b5fd3c8953094f2
+========
+guid: cfe6030f0638d3741b59a1c0d824667d
+>>>>>>>> origin/main:Assets/_Proj/Scenes/Backup.unity.meta
 DefaultImporter:
   externalObjects: {}
   userData: 

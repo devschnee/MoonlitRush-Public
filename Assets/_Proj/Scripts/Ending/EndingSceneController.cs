@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -9,89 +9,89 @@ using PlayerTimeData = TimeManager.PlayerTimeData;
 
 public class EndingSceneController : MonoBehaviour
 {
-    [Header("UI References")]
-    public RankingUI rankingUI;    // ¾À ¾ÈÀÇ RankingUI ¿ÀºêÁ§Æ® Á÷Á¢ µå·¡±×(¾øÀ¸¸é ÀÚµ¿ Å½»ö)
-    public GameObject buttonsRoot;
-    public Button toLobbyButton;
-    public string lobbySceneName = "Lobby";
-    public Button quitButton;
+  [Header("UI References")]
+  public RankingUI rankingUI;    // ì”¬ ì•ˆì˜ RankingUI ì˜¤ë¸Œì íŠ¸ ì§ì ‘ ë“œë˜ê·¸(ì—†ìœ¼ë©´ ìë™ íƒìƒ‰)
+  public GameObject buttonsRoot;
+  public Button toLobbyButton;
+  public string lobbySceneName = "Lobby";
+  public Button quitButton;
 
-    [Header("Delay")]
-    public float showDelay = 0.6f;
+  [Header("Delay")]
+  public float showDelay = 0.6f;
 
-    void Start()
+  void Start()
+  {
+    // ë²„íŠ¼ ì´ë²¤íŠ¸ ë“±ë¡
+    if (toLobbyButton)
+      toLobbyButton.onClick.AddListener(() =>
+      {
+        if (SceneManagers.Instance) SceneManagers.LoadScene(lobbySceneName);
+        else SceneManager.LoadScene(lobbySceneName);
+      });
+
+    if (quitButton)
+      quitButton.onClick.AddListener(Application.Quit);
+
+    if (!rankingUI) rankingUI = FindObjectOfType<RankingUI>(true);
+    if (buttonsRoot) buttonsRoot.SetActive(false);
+
+    StartCoroutine(CoSequence());
+  }
+
+  IEnumerator CoSequence()
+  {
+    if (showDelay > 0f)
+      yield return new WaitForSecondsRealtime(showDelay);
+
+    var tm = TimeManager.Instance;
+    var rm = RaceManager.Instance;
+
+    // 1) DNF ì±„ìš°ê¸°(ì™„ì£¼ ëª»í•œ ì‚¬ëŒë„ ë°˜ë“œì‹œ ìˆœìœ„ì— ë‚˜ì˜¤ê²Œ)
+    if (tm != null && rm != null)
+      tm.EnsureDNFsFrom(rm.racers);
+
+    // 2) ê²°ê³¼ ê°€ì ¸ì˜¤ê¸°: RaceDataStore â†’ TimeManager â†’ ë§ˆì§€ë§‰ ìˆ˜ë‹¨ìœ¼ë¡œ í˜„ì¬ racersë¡œ ë¹Œë“œ
+    List<PlayerTimeData> results = RaceDataStore.RankingData;
+
+    if (results == null || results.Count == 0)
+      results = tm != null ? tm.GetRanking() : null;
+
+    if ((results == null || results.Count == 0) && rm != null && rm.racers != null)
     {
-        // ¹öÆ° ÀÌº¥Æ® µî·Ï
-        if (toLobbyButton)
-            toLobbyButton.onClick.AddListener(() =>
-            {
-                if (SceneManagers.Instance) SceneManagers.LoadScene(lobbySceneName);
-                else SceneManager.LoadScene(lobbySceneName);
-            });
+      // racersì—ì„œ ì¦‰ì„ ìƒì„± (ë“¤ì–´ì˜¨ ìˆœì„œê°€ ì—†ìœ¼ë©´ í˜„ì¬ ì •ë ¬ëŒ€ë¡œ)
+      results = new List<PlayerTimeData>(rm.racers.Count);
+      foreach (var r in rm.racers)
+      {
+        if (!r) continue;
+        string safeName =
+            !string.IsNullOrWhiteSpace(r.displayName) ? r.displayName :
+            !string.IsNullOrWhiteSpace(r.racerName) ? r.racerName :
+            PlayerPrefs.GetString("PlayerNickname", "Player");
 
-        if (quitButton)
-            quitButton.onClick.AddListener(Application.Quit);
-
-        if (!rankingUI) rankingUI = FindObjectOfType<RankingUI>(true);
-        if (buttonsRoot) buttonsRoot.SetActive(false);
-
-        StartCoroutine(CoSequence());
+        float f = (r.finished && tm != null) ? tm.RaceDuration : -1f; // DNFëŠ” -1 => "--"
+        results.Add(new PlayerTimeData { playerName = safeName, finishTime = f, finished = r.finished, isPlayer = r.isPlayer });
+      }
     }
 
-    IEnumerator CoSequence()
+    if (results == null || results.Count == 0)
     {
-        if (showDelay > 0f)
-            yield return new WaitForSecondsRealtime(showDelay);
-
-        var tm = TimeManager.Instance;
-        var rm = RaceManager.Instance;
-
-        // 1) DNF Ã¤¿ì±â(¿ÏÁÖ ¸øÇÑ »ç¶÷µµ ¹İµå½Ã ¼øÀ§¿¡ ³ª¿À°Ô)
-        if (tm != null && rm != null)
-            tm.EnsureDNFsFrom(rm.racers);
-
-        // 2) °á°ú °¡Á®¿À±â: RaceDataStore ¡æ TimeManager ¡æ ¸¶Áö¸· ¼ö´ÜÀ¸·Î ÇöÀç racers·Î ºôµå
-        List<PlayerTimeData> results = RaceDataStore.RankingData;
-
-        if (results == null || results.Count == 0)
-            results = tm != null ? tm.GetRanking() : null;
-
-        if ((results == null || results.Count == 0) && rm != null && rm.racers != null)
-        {
-            // racers¿¡¼­ Áï¼® »ı¼º (µé¾î¿Â ¼ø¼­°¡ ¾øÀ¸¸é ÇöÀç Á¤·Ä´ë·Î)
-            results = new List<PlayerTimeData>(rm.racers.Count);
-            foreach (var r in rm.racers)
-            {
-                if (!r) continue;
-                string safeName =
-                    !string.IsNullOrWhiteSpace(r.displayName) ? r.displayName :
-                    !string.IsNullOrWhiteSpace(r.racerName) ? r.racerName :
-                    PlayerPrefs.GetString("PlayerNickname", "Player");
-
-                float f = (r.finished && tm != null) ? tm.RaceDuration : -1f; // DNF´Â -1 => "--"
-                results.Add(new PlayerTimeData { playerName = safeName, finishTime = f, finished = r.finished, isPlayer = r.isPlayer });
-            }
-        }
-
-        if (results == null || results.Count == 0)
-        {
-            //Debug.LogWarning("[Ending] ·©Å· µ¥ÀÌÅÍ ¾øÀ½");
-            if (buttonsRoot) buttonsRoot.SetActive(true);
-            yield break;
-        }
-
-        // 3) ·©Å· Ç¥½Ã
-        if (rankingUI)
-        {
-            rankingUI.ShowRanking(results);
-            //Debug.Log($"[Ending] {results.Count}¸í ·©Å· Ç¥½Ã ¿Ï·á");
-        }
-        else
-        {
-            //Debug.LogError("[Ending] RankingUI°¡ ¾À¿¡ ¾ø½À´Ï´Ù! (¾À¿¡ ¹èÄ¡ÇÏ°í ÀÎ½ºÆåÅÍ ¿¬°á ÇÊ¿ä)");
-        }
-
-        // 4) ¹öÆ° Ç¥½Ã
-        if (buttonsRoot) buttonsRoot.SetActive(true);
+      //Debug.LogWarning("[Ending] ë­í‚¹ ë°ì´í„° ì—†ìŒ");
+      if (buttonsRoot) buttonsRoot.SetActive(true);
+      yield break;
     }
+
+    // 3) ë­í‚¹ í‘œì‹œ
+    if (rankingUI)
+    {
+      rankingUI.ShowRanking(results);
+      //Debug.Log($"[Ending] {results.Count}ëª… ë­í‚¹ í‘œì‹œ ì™„ë£Œ");
+    }
+    else
+    {
+      //Debug.LogError("[Ending] RankingUIê°€ ì”¬ì— ì—†ìŠµë‹ˆë‹¤! (ì”¬ì— ë°°ì¹˜í•˜ê³  ì¸ìŠ¤í™í„° ì—°ê²° í•„ìš”)");
+    }
+
+    // 4) ë²„íŠ¼ í‘œì‹œ
+    if (buttonsRoot) buttonsRoot.SetActive(true);
+  }
 }

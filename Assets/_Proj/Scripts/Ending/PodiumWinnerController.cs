@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -10,11 +10,11 @@ using PlayerTimeData = TimeManager.PlayerTimeData;
 public class PodiumWinnerController : MonoBehaviour
 {
     [Header("Winner Spot")]
-    public Transform winnerSpot;      // ¿ì½Â Â÷·® ÀÚ¸®
-    public Vector3 offset;            // ÇÊ¿ä½Ã º¸Á¤
+    public Transform winnerSpot;      // ìš°ìŠ¹ ì°¨ëŸ‰ ìë¦¬
+    public Vector3 offset;            // í•„ìš”ì‹œ ë³´ì •
     public Vector3 rotation;
     public float scale = 1f;
-
+    
 
     [Header("UI")]
     public TMP_Text nameText;
@@ -31,12 +31,12 @@ public class PodiumWinnerController : MonoBehaviour
 
     void Start()
     {
-        //var tm = TimeManager.Instance;
-        //if (tm == null)
-        //{
-        //    Debug.LogError("[Podium] TimeManager.Instance is NULL. Make sure TimeManager exists in the race scene and uses DontDestroyOnLoad.");
-        //    return;
-        //}
+    //var tm = TimeManager.Instance;
+    //if (tm == null)
+    //{
+    //    Debug.LogError("[Podium] TimeManager.Instance is NULL. Make sure TimeManager exists in the race scene and uses DontDestroyOnLoad.");
+    //    return;
+    //}
 
         List<PlayerTimeData> results = RaceDataStore.RankingData;
         if (results == null || results.Count == 0)
@@ -45,7 +45,7 @@ public class PodiumWinnerController : MonoBehaviour
             return;
         }
 
-        // ¿ì½Â Â÷·® ½ºÆù
+        // ìš°ìŠ¹ ì°¨ëŸ‰ ìŠ¤í°
         //if (tm.winnerPodiumPrefab && winnerSpot)
         //{
         //    var car = Instantiate(tm.winnerPodiumPrefab, winnerSpot);
@@ -54,7 +54,7 @@ public class PodiumWinnerController : MonoBehaviour
         //    car.transform.localScale = Vector3.one * scale;
         //}
 
-        // 1µî ÅØ½ºÆ® ¼¼ÆÃ (Inspector ¿¬°á ÇÊ¼ö)
+        // 1ë“± í…ìŠ¤íŠ¸ ì„¸íŒ… (Inspector ì—°ê²° í•„ìˆ˜)
         var winner = results[0];
         if (nameText) nameText.text = winner.playerName;
         if (timeText) timeText.text = TimeManager.FormatTime(winner.finishTime);
@@ -65,7 +65,7 @@ public class PodiumWinnerController : MonoBehaviour
     {
         if (isRunning) return;
 
-
+        
 
         string nameFromRanking = null;
         float timeFromRanking = 0f;

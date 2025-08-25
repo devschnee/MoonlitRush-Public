@@ -1,8 +1,15 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/_Proj/Materials/PanelMaterial.mat.meta
 guid: a3a377166dc9aa749abe0422f5355331
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 2100000
+========
+guid: 92c157384c658384593ff4f08c89beed
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+>>>>>>>> origin/main:Assets/_Proj/Fonts/Aldrich-Regular SDF.mat.meta
   userData: 
   assetBundleName: 
   assetBundleVariant: 
