@@ -93,7 +93,7 @@ public class FinalCount : MonoBehaviour
     var ai = tf.GetComponentInParent<AICarController>() ?? tf.GetComponentInChildren<AICarController>();
 
     if (car){ car.isFinished = true; car.moveInput = 0f;}
-    if (ai)  ai.isFinished = true; ai.moveInput = 0f; 
+    if (ai) { ai.isFinished = true; ai.moveInput = 0f; }
     
     // 시작값 캐시해서 매 프레임 부드럽게 Lerp
     float t = 0f;
