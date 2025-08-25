@@ -94,7 +94,7 @@ public class AICarController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        // if (moveStart == false) return;
+        if(isFinished) return;
 
         if (WaypointTest == null || WaypointTest.Count == 0) return;
 
@@ -431,7 +431,7 @@ public class AICarController : MonoBehaviour
                 boostApplyer.ApplyBoost(2f, 1f, 1.5f);
             }
 
-            boostCoroutine = StartCoroutine(BoostRoutine(40, 1.5f));
+            boostCoroutine = StartCoroutine(BoostRoutine(28, 1.5f));
         }
         else if (other.CompareTag("SpeedUp"))
         {

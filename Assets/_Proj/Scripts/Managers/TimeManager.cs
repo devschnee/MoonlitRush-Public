@@ -91,7 +91,7 @@ public class TimeManager : MonoBehaviour
     // Returns elapsed time as a string (minutes:seconds.milliseconds)
     public static string FormatTime(float t)
     {
-    if (t < 0 || float.IsNaN(t) || float.IsInfinity(t)) return "--";
+    if (t < 0 || float.IsNaN(t) || float.IsInfinity(t)) return "Time Over";
         int m = Mathf.FloorToInt(t / 60f);
         float s = t % 60f;
         return $"{m:00}:{s:00.000}";
@@ -133,12 +133,9 @@ public class TimeManager : MonoBehaviour
     {
     if(ri == null) return;
 
-    string safeName =
-      !string.IsNullOrWhiteSpace(ri.displayName) ? ri.displayName :
-      !string.IsNullOrWhiteSpace(ri.racerName) ? ri.racerName :
-      PlayerPrefs.GetString("PlayerNickname", "Player");
+    string safeName = SafeNameOf(ri);
        
-    if (data.Exists(x => x.playerName == safeName)) return;
+    if (data.Any(x => x.playerName == safeName)) return;
 
     data.Add(new PlayerTimeData
     {
@@ -148,6 +145,13 @@ public class TimeManager : MonoBehaviour
       finished = (fTime >= 0f)
     });
     }
+
+  public static string SafeNameOf(RacerInfo ri)
+  {
+    return !string.IsNullOrWhiteSpace(ri.displayName) ? ri.displayName :
+           !string.IsNullOrWhiteSpace(ri.racerName) ? ri.racerName :
+           PlayerPrefs.GetString("PlayerNickname", "Player");
+  }
   public void EnsureDNFsFrom(List<RacerInfo> racers)
   {
     if (racers == null) return;
