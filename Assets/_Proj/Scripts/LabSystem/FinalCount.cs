@@ -106,7 +106,22 @@ public class FinalCount : MonoBehaviour
 
     if (car){ car.isFinished = true; car.moveInput = 0f;}
     if (ai) { ai.isFinished = true; ai.moveInput = 0f; }
-    
+    if (car)
+    {
+      car.BeginFinishSequence(duration, lockControl);
+      yield break;
+    }
+    if (ai)
+    {
+      yield return ai.SmoothStop(duration);
+      if (lockControl)
+      {
+        ai.moveStart = false;
+        ai.enabled = false;
+        if (rb) rb.isKinematic = true;
+      }
+      yield break;
+    }
     // 시작값 캐시해서 매 프레임 부드럽게 Lerp
     float t = 0f;
     Vector3 v0 = rb ? rb.velocity : Vector3.zero;
