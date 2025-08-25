@@ -86,26 +86,27 @@ public class FinalCount : MonoBehaviour
   {
     if (!racer) yield break;
 
-    var tf = racer ? racer.transform : null;
+    var tf = racer.transform;
     var rb = tf.GetComponentInParent<Rigidbody>() ?? tf.GetComponentInChildren<Rigidbody>();
     var car = tf.GetComponentInParent<CarController>() ?? tf.GetComponentInChildren<CarController>();
     var ai = tf.GetComponentInParent<AICarController>() ?? tf.GetComponentInChildren<AICarController>();
 
     if (car) car.isFinished = true; car.moveInput = 0f;
     if (ai) ai.isFinished = true; ai.moveInput = 0f;
-
+    
     // 시작값 캐시해서 매 프레임 부드럽게 Lerp
     float t = 0f;
     Vector3 v0 = rb ? rb.velocity : Vector3.zero;
     Vector3 w0 = rb ? rb.angularVelocity : Vector3.zero;
     while (t < duration)
     {
-      if (!rb) break; // 코루틴 중 파괴 대비
 
-      float k = (duration <= 0f) ? 1f : t / duration;
-      rb.velocity = Vector3.Lerp(rb.velocity, Vector3.zero, k);
-      rb.angularVelocity = Vector3.Lerp(rb.angularVelocity, Vector3.zero, k);
-
+      if (rb)
+      {
+        float k = (duration <= 0f) ? 1f : t / duration;
+        rb.velocity = Vector3.Lerp(rb.velocity, Vector3.zero, k);
+        rb.angularVelocity = Vector3.Lerp(rb.angularVelocity, Vector3.zero, k);
+      }
       t += Time.unscaledDeltaTime;
       yield return null;
     }
