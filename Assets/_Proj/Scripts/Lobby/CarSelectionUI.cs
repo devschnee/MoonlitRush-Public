@@ -1,11 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static Unity.VisualScripting.Member;
 
 public class CarSelectionUI : MonoBehaviour
 {     
     public GameObject[] carPrefabs;  //현재 배열에 넣은 car는 임시로 후에 수정
     int selectedCarIndex = 0;
+
+    private AudioSource source;
+    public AudioClip selectedCarClip;
 
     private void Start()
     {
@@ -24,6 +28,9 @@ public class CarSelectionUI : MonoBehaviour
             selectedCarIndex = 0;
         }        
         UpdateCarDisplay();
+
+        source.PlayOneShot(selectedCarClip);
+        
     }
 
     public void SelectPreviousCar() //이전 차량으로 변경
@@ -34,6 +41,9 @@ public class CarSelectionUI : MonoBehaviour
             selectedCarIndex = carPrefabs.Length - 1;
         }      
         UpdateCarDisplay();
+
+
+        source.PlayOneShot(selectedCarClip);
     }
 
     void UpdateCarDisplay()

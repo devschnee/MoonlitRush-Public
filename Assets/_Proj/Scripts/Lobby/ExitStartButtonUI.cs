@@ -1,17 +1,21 @@
-ï»¿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ExitStartButtonUI : MonoBehaviour
-{
+{   
     public GameObject exit;
     public CarSelectionUI carSelectionUI;
+
+    private AudioSource source;
+    public AudioClip buttonSound;
     
+
     private void Awake()
-    {
-        exit.SetActive(false);
+    {       
+            exit.SetActive(false);
     }
 
     private void Update()
@@ -24,37 +28,43 @@ public class ExitStartButtonUI : MonoBehaviour
 
     public void GameExit()
     {
-        Debug.Log("ê²Œì„ ì¢…ë£Œ ìš”ì²­");        
+        Debug.Log("°ÔÀÓ Á¾·á ¿äÃ»");        
         Application.Quit();
+        source.PlayOneShot(buttonSound);
     }
 
     public void OPExitPanel()
     {
         exit.SetActive(true);
+        source.PlayOneShot(buttonSound);
     }
     
    public void CloseExitPanel()
     {
         exit.SetActive(false);
+        source.PlayOneShot(buttonSound);
     }
 
-    //ë¡œë¹„ìš©
+    //·Îºñ¿ë
     public void GameStart()
     {
-        // ì„ íƒ ì •ë³´ ì €ì¥
+        // ¼±ÅÃ Á¤º¸ ÀúÀå
         carSelectionUI.SaveSelection();
-    UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("CityMap");
+        source.PlayOneShot(buttonSound);
     }
 
-    //ê²°ê³¼ì°½ì—ì„œ ì¬ì‹œì‘
+    //°á°úÃ¢¿¡¼­ Àç½ÃÀÛ
     public void ReGameStart()
     {
-    UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("CityMap");
+        source.PlayOneShot(buttonSound);
     }
         
-    public void Lobby() //ë¡œë¹„ë¡œ ê°€ê¸° ë° ëŒì•„ê°€ê¸°
+    public void Lobby() //·Îºñ·Î °¡±â ¹× µ¹¾Æ°¡±â
     {
-    UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
+        source.PlayOneShot(buttonSound);
     }
 
    
