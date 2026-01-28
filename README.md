@@ -86,7 +86,7 @@
 ### 차량 시스템 흐름도
 
 #### 📂 Source Entry
-- [`/Assets/_Proj/Scripts`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts)
+- [`/Assets/_Proj/Scripts`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts)
 
 CarController는 입력을 기반으로 주행 상태를 판단하고,
 서스펜션·기어·드리프트·에어본·배럴롤을 조건적으로 적용한 뒤
@@ -140,7 +140,7 @@ CarController는 입력을 기반으로 주행 상태를 판단하고,
 ## 🚙 Vehicle System
 
 #### 📂 Code Reference
-- [`CarController.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Player/CarController.cs)
+- [`CarController.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Player/CarController.cs)
 
 <a id="suspension"></a>
 ### 🔩 Suspension
@@ -231,7 +231,7 @@ CarController는 입력을 기반으로 주행 상태를 판단하고,
 ## 🧰 Item System
 
 #### 📂 Code Reference
-- [`/Scripts/Items`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Items)
+- [`/Scripts/Items`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Items)
 
 💡 **2-Slot FIFO 구조의 아이템 시스템**
 
@@ -242,7 +242,7 @@ CarController는 입력을 기반으로 주행 상태를 판단하고,
 <a id="missile"></a>
 ### 🚀 Missile
 
-#### [`MissileProj.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Items/MissileProj.cs)
+#### [`MissileProj.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Items/MissileProj.cs)
 💡 **반경 내 가장 가까운 차량을 추적하는 미사일**
 
   - 반경 내 플레이어 또는 AI를 탐색하여 전방 기준 가장 가까운 차량을 타겟으로 설정
@@ -254,7 +254,7 @@ CarController는 입력을 기반으로 주행 상태를 판단하고,
 <a id="shield"></a>
 ### 🔰 Shield
 
-#### [`ShieldItem.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Items/ShieldItem.cs)
+#### [`ShieldItem.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Items/ShieldItem.cs)
 💡 **미사일 공격을 무효화하는 방어 아이템**
 
   - 사용 시 일정 시간 동안 미사일 충돌을 무시하는 보호 상태 적용
@@ -266,7 +266,7 @@ CarController는 입력을 기반으로 주행 상태를 판단하고,
 <a id="booster"></a>
 ### ⚡ Booster
 
-#### [`BoosterItem.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Items/BoosterItem.cs)
+#### [`BoosterItem.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Items/BoosterItem.cs)
 💡 **속도 상태를 보정하는 부스터 아이템**
 
   - 부스트 효과(FX)와 함께 일정 시간 가속 상태 연출
@@ -282,13 +282,13 @@ CarController는 입력을 기반으로 주행 상태를 판단하고,
 ## 🏁 Ranking System
 
 #### 📂 Code Reference
-- [`/Scripts/Checkpoint`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Checkpoint)
-- [`LapCounter.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/LapSystem/LapCounter.cs)
-- [`RacerInfo.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/LapSystem/RacerInfo.cs)
-- [`RaceRankUI.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/LapSystem/RaceRankUI.cs)
-- [`TimeManager.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Managers/TimeManager.cs)
-- [`RaceManager.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/Managers/RaceManager.cs)
-- [`RankingUI.cs`](https://github.com/devschnee/MoonlitRush/blob/main/Assets/_Proj/Scripts/UI/RankingUI.cs)
+- [`/Scripts/Checkpoint`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Checkpoint)
+- [`LapCounter.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/LapSystem/LapCounter.cs)
+- [`RacerInfo.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/LapSystem/RacerInfo.cs)
+- [`RaceRankUI.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/LapSystem/RaceRankUI.cs)
+- [`TimeManager.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Managers/TimeManager.cs)
+- [`RaceManager.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/Managers/RaceManager.cs)
+- [`RankingUI.cs`](https://github.com/devschnee/MoonlitRush-Public/blob/main/Assets/_Proj/Scripts/UI/RankingUI.cs)
 
 💡 **체크포인트 기반 실시간 순위 산정 시스템**
 
