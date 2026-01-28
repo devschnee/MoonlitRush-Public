@@ -12,14 +12,14 @@ public class ItemCollector : MonoBehaviour
 
   void OnTriggerEnter(Collider other)
   {
-    //Debug.Log("Tag: " + other.tag);
-
     if (!other.CompareTag("ItemBooster") && !other.CompareTag("ItemShield") && !other.CompareTag("ItemMissile")) return;
 
     var pick = other.GetComponent<ItemBox>();
     if (pick == null) return;
 
     bool added = false;
+    
+    // 아이템 데이터가 있고 슬롯이 비어 있으면 추가
     if(pick.itemData != null && itemSlots != null)
     {
         added = itemSlots.AddItem(pick.itemData);

@@ -7,8 +7,6 @@ public class TimeManager : MonoBehaviour
   // Singleton Instance : Accessible from anywhere
   public static TimeManager Instance;
 
-  //[Header("Podium")]
-  //public GameObject winnerPodiumPrefab;
   private float playerFinishTime = 0f;
   public class PlayerTimeData
   {
@@ -113,9 +111,9 @@ public class TimeManager : MonoBehaviour
     isPaused = false;
     pausedTime = 0f;
     totalPausedDuration = 0f;
-    //winnerPodiumPrefab = null;
   }
 
+  // 이름 기반 기록 저장
   public void RecordFinishTime(string name, float fTime)
   {
 
@@ -129,6 +127,7 @@ public class TimeManager : MonoBehaviour
     data.Add(new PlayerTimeData { playerName = safe, finishTime = fTime, finished = true });
   }
 
+  // RacerInfo 기반 기록 저장
   public void RecordFinishTime(RacerInfo ri, float fTime)
   {
     if (ri == null) return;
@@ -186,16 +185,10 @@ public class TimeManager : MonoBehaviour
         ? FormatTime(p.finishTime)
         : "Time Over";
   }
-  //public void TrySetWinnerPrefab(RacerInfo ri)
-  //{
-  //    if (!winnerPodiumPrefab && ri && ri.podiumDisplayPrefab)
-  //        winnerPodiumPrefab = ri.podiumDisplayPrefab;
-  //}
 
   public List<PlayerTimeData> GetRanking()
   {
     return new List<PlayerTimeData>(data);
-    //return data.OrderBy(p => p.finishTime).ToList(); // Sort racing records by fastest time
   }
 
 }
